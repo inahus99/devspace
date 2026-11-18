@@ -55,7 +55,22 @@ Open http://localhost:5173. The first visit shows **Create your DevSpace**. The 
 
 ## Deploying on Railway
 
-`railway.json` already configures the build, the start command and the `/api/health` healthcheck.
+The live project's infrastructure is defined in code in [`.railway/railway.ts`](.railway/railway.ts). It declares the app service (build, `npm start`, the `/api/health` check, and the `/data` volume) plus Postgres and its volume.
+
+Variables are **unmanaged**: secrets live only in Railway and never in this file.
+
+```bash
+railway config plan     # preview what would change (read-only)
+railway config apply    # apply it
+railway up --service devspace   # deploy the current folder
+```
+
+> **Windows + Git Bash:** the `railway` npm SDK checks the CLI version by running `$_`, which Git Bash sets to an unrelated path. Run plan/apply with `_` pointing at the real binary:
+> `_="$(cygpath -w "$APPDATA/npm/node_modules/@railway/cli/bin/railway.exe")" railway config plan`.
+>
+> Keep both volumes in `railway.ts`. Removing one from the file deletes it on the next apply.
+
+To set up a **new** Railway project by hand instead:
 
 1. **New project → Deploy from GitHub repo**, and pick this repository.
 2. **Add Postgres:** `+ New → Database → PostgreSQL`.
