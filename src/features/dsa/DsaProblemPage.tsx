@@ -190,7 +190,7 @@ function ProblemEditor({ problem }: { problem: DsaProblem }) {
       </div>
 
       {/* Properties */}
-      <div className="mt-5 grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-5 grid gap-3 rounded-xl border bg-card shadow-soft p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Status">
           <EnumSelect value={problem.status} onChange={(v) => v && updateNow.mutate({ id: problem.id, status: v })} options={DSA_STATUSES} labels={DSA_STATUS_LABELS} />
         </Field>
@@ -308,7 +308,7 @@ function Solutions({ problem }: { problem: DsaProblem }) {
   };
 
   return (
-    <section className="rounded-lg border bg-card">
+    <section className="rounded-xl border bg-card shadow-soft">
       <header className="flex items-center gap-2 border-b px-2 py-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="tablist" aria-label="Solutions">
           {solutions.map((s) => (
@@ -444,7 +444,7 @@ function RevisionPanel({ problem }: { problem: DsaProblem }) {
   const today = todayISO();
   const due = isDue(problem, today);
   return (
-    <section className="rounded-lg border bg-card">
+    <section className="rounded-xl border bg-card shadow-soft">
       <header className="flex items-center justify-between border-b px-4 py-2.5">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <RotateCcw className="size-3.5 text-muted-foreground" /> Revision
@@ -487,7 +487,7 @@ function LinkedSnippets({ problem }: { problem: DsaProblem }) {
   const openCapture = useUi((s) => s.openCapture);
   const { data } = useList("snippets", { dsaProblemId: problem.id });
   return (
-    <section className="rounded-lg border bg-card">
+    <section className="rounded-xl border bg-card shadow-soft">
       <header className="flex items-center justify-between border-b px-4 py-2.5">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <FileCode2 className="size-3.5 text-muted-foreground" /> Linked snippets
@@ -521,7 +521,7 @@ function ActivityHistory({ problemId }: { problemId: string }) {
   const list = useMemo(() => [...(data ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8), [data]);
   if (!list.length) return null;
   return (
-    <section className="rounded-lg border bg-card">
+    <section className="rounded-xl border bg-card shadow-soft">
       <header className="border-b px-4 py-2.5">
         <h2 className="text-sm font-medium">Practice sessions</h2>
       </header>

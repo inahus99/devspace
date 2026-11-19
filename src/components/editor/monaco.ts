@@ -23,8 +23,8 @@ monaco.editor.defineTheme("devspace-light", {
   rules: [],
   colors: {
     "editor.background": "#ffffff",
-    "editor.lineHighlightBackground": "#f6f6f8",
-    "editorLineNumber.foreground": "#b4b4bc",
+    "editor.lineHighlightBackground": "#f7f3ec",
+    "editorLineNumber.foreground": "#b3bdbb",
     "editorGutter.background": "#ffffff",
   },
 });
@@ -33,10 +33,10 @@ monaco.editor.defineTheme("devspace-dark", {
   inherit: true,
   rules: [],
   colors: {
-    "editor.background": "#1b1b1f",
-    "editor.lineHighlightBackground": "#232328",
-    "editorLineNumber.foreground": "#55555e",
-    "editorGutter.background": "#1b1b1f",
+    "editor.background": "#16272a",
+    "editor.lineHighlightBackground": "#1d3134",
+    "editorLineNumber.foreground": "#5a706e",
+    "editorGutter.background": "#16272a",
   },
 });
 

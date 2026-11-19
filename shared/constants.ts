@@ -120,6 +120,6 @@ export function languageExt(id: string): string {
 
 /** Accent colours offered for workspaces. Values are hex so they survive export. */
 export const WORKSPACE_COLORS = [
-  "#1f3550", "#b4572e", "#5f7a94", "#2f7d5b", "#c98f2e", "#7a4a6b",
-  "#2e6f73", "#8c3b2e", "#c7728a", "#6b5440", "#3d4b5c", "#8a9aa8",
+  "#2b7a74", "#dd6a50", "#3a8ca4", "#cf923a", "#c0657c", "#5d9c7c",
+  "#7088b0", "#b5674b", "#4a6b6d", "#9a7bb0", "#8a9a5b", "#7f8f8e",
 ] as const;

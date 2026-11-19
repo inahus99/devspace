@@ -24,7 +24,7 @@ export function PageHeader({
       <div className="flex min-w-0 items-start gap-3">
         {icon}
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
           {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
         </div>
       </div>
@@ -131,7 +131,7 @@ export const modKey = isMac ? "⌘" : "Ctrl";
 /** Small labelled stat used on dashboard/analytics. */
 export function Stat({ label, value, hint, icon: Icon }: { label: string; value: ReactNode; hint?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="rounded-lg border bg-card px-4 py-3">
+    <div className="rounded-xl border bg-card shadow-soft px-4 py-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         {Icon ? <Icon className="size-3.5" /> : null}
         {label}
@@ -157,7 +157,7 @@ export function Section({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cn("rounded-lg border bg-card", className)}>
+    <section className={cn("rounded-xl border bg-card shadow-soft", className)}>
       <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
         <h2 className="text-sm font-medium">{title}</h2>
         {action}

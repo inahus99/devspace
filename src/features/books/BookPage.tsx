@@ -311,7 +311,7 @@ function ProgressCard({ book, pct }: { book: Book; pct: number }) {
   };
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="rounded-xl border bg-card shadow-soft p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-xs text-muted-foreground">Progress</div>

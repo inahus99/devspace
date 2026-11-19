@@ -348,7 +348,7 @@ function LinkedSnippets({ noteId }: { noteId: string }) {
   const { data } = useList("snippets", { noteId });
   if (!data?.length) return null;
   return (
-    <section className="rounded-lg border bg-card">
+    <section className="rounded-xl border bg-card shadow-soft">
       <header className="flex items-center gap-2 border-b px-4 py-2.5 text-sm font-medium">
         <Code2 className="size-3.5 text-muted-foreground" /> Linked snippets
       </header>

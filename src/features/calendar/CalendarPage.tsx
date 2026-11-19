@@ -99,7 +99,7 @@ export default function CalendarPage() {
     <Page wide className="flex h-full flex-col">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {isFetching ? <span className="size-1.5 animate-pulse rounded-full bg-brand" aria-label="Loading" /> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -174,7 +174,7 @@ function MonthView({
   const MAX = 3;
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
       <div className="grid grid-cols-7 border-b bg-muted/40 text-xs text-muted-foreground">
         {headers.map((h) => (
           <div key={h} className="px-2 py-1.5">
@@ -418,7 +418,7 @@ function TimeGrid({
   const cols = `56px repeat(${days.length}, minmax(0, 1fr))`;
 
   return (
-    <div className="flex min-h-[560px] flex-1 flex-col overflow-hidden rounded-lg border bg-card">
+    <div className="flex min-h-[560px] flex-1 flex-col overflow-hidden rounded-xl border bg-card shadow-soft">
       {/* Header */}
       <div className="grid border-b bg-muted/40" style={{ gridTemplateColumns: cols }}>
         <div />
@@ -536,7 +536,7 @@ function DayView({ date, items }: { date: string; items: ActivityWithLink[] }) {
           <MiniStat label="Planned" value={formatMinutes(t.plannedMinutes)} icon={<Clock className="size-3" />} />
           <MiniStat label="Actual" value={formatMinutes(t.actualMinutes)} icon={<Timer className="size-3" />} />
         </div>
-        <div className="rounded-lg border bg-card p-1.5">
+        <div className="rounded-xl border bg-card shadow-soft p-1.5">
           {items.length ? (
             items.map((a) => <ActivityItem key={a.id} activity={a} />)
           ) : (
@@ -558,7 +558,7 @@ function DayView({ date, items }: { date: string; items: ActivityWithLink[] }) {
 
 function MiniStat({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
-    <div className="rounded-lg border bg-card px-3 py-2">
+    <div className="rounded-xl border bg-card shadow-soft px-3 py-2">
       <div className="flex items-center gap-1 text-2xs text-muted-foreground">
         {icon}
         {label}

@@ -125,7 +125,7 @@ export default function PlannerPage() {
               description="Type a title above and press Enter, or add an activity with times and a linked problem, note or resource."
             />
           ) : (
-            <div className="rounded-lg border bg-card p-1.5">
+            <div className="rounded-xl border bg-card shadow-soft p-1.5">
               {dayItems.map((a) => (
                 <ActivityItem key={a.id} activity={a} />
               ))}
@@ -134,7 +134,7 @@ export default function PlannerPage() {
         </div>
 
         <aside className="space-y-3">
-          <div className="rounded-lg border bg-card p-4">
+          <div className="rounded-xl border bg-card shadow-soft p-4">
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-muted-foreground">Completed</span>
               <span className="text-sm font-medium tabular">

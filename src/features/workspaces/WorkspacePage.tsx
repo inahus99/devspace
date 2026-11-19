@@ -128,7 +128,7 @@ export default function WorkspacePage() {
         <div className="flex min-w-0 items-start gap-3">
           <WorkspaceIcon icon={ws.icon} color={ws.color} size="lg" />
           <div className="min-w-0">
-            <h1 className="flex items-center gap-2 truncate text-xl font-semibold tracking-tight">
+            <h1 className="flex items-center gap-2 truncate text-2xl font-semibold tracking-tight">
               {ws.name}
               {ws.archivedAt ? (
                 <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-2xs font-normal text-muted-foreground">
@@ -241,7 +241,7 @@ export default function WorkspacePage() {
                     ["lld", summary?.lldExercises],
                   ] as const
                 ).map(([t, n]) => (
-                  <button key={t} type="button" onClick={() => setTab(t)} className="rounded-lg border bg-card px-3 py-2 text-left hover:bg-accent/50">
+                  <button key={t} type="button" onClick={() => setTab(t)} className="rounded-xl border bg-card shadow-soft px-3 py-2 text-left hover:bg-accent/50">
                     <div className="text-lg font-semibold tabular">{n ?? 0}</div>
                     <div className="text-xs text-muted-foreground">{TAB_LABELS[t]}</div>
                   </button>

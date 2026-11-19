@@ -146,7 +146,7 @@ export function ResourceList({
                   <span className="font-normal">{g.rows.length}</span>
                 </div>
               ) : null}
-              <ul className="divide-y overflow-hidden rounded-lg border bg-card">
+              <ul className="divide-y overflow-hidden rounded-xl border bg-card shadow-soft">
                 {g.rows.map((r) => (
                   <ResourceRow
                     key={r.id}

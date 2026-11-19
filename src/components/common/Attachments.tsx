@@ -238,7 +238,7 @@ export function AttachmentsPanel({
 
   return (
     <section
-      className={cn("rounded-lg border bg-card", dragging && "ring-2 ring-brand", className)}
+      className={cn("rounded-xl border bg-card shadow-soft", dragging && "ring-2 ring-brand", className)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       {...handlers}

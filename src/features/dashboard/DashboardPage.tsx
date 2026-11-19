@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs text-muted-foreground">{format(fromISODate(today), "EEEE, MMMM d")}</p>
-          <h1 className="mt-0.5 text-xl font-semibold tracking-tight">
+          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
             {greeting()}
             {name ? `, ${name}` : ""}
           </h1>
@@ -360,7 +360,7 @@ function WorkspaceGrid({
           const s = byId.get(w.id);
           const pct = s?.progress == null ? null : Math.round(s.progress * 100);
           return (
-            <Link key={w.id} to={routes.workspace(w.id)} className="group rounded-lg border bg-card p-4 transition-colors hover:border-foreground/15">
+            <Link key={w.id} to={routes.workspace(w.id)} className="group rounded-xl border bg-card shadow-soft p-4 transition-colors hover:border-foreground/15">
               <div className="flex items-center gap-2.5">
                 <WorkspaceIcon icon={w.icon} color={w.color} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{w.name}</span>

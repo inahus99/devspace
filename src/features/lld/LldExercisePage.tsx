@@ -198,7 +198,7 @@ function ExerciseEditor({ exercise: ex }: { exercise: LldExercise }) {
         <span>· Updated {timeAgo(ex.updatedAt)}</span>
       </div>
 
-      <div className="mt-5 grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-5 grid gap-3 rounded-xl border bg-card shadow-soft p-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Status">
           <EnumSelect value={ex.status} onChange={(v) => v && updateNow.mutate({ id: ex.id, status: v })} options={LLD_STATUSES} labels={LLD_STATUS_LABELS} />
         </Field>

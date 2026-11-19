@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/fraunces/soft.css";
 @import "@fontsource-variable/jetbrains-mono";
 @plugin "@tailwindcss/typography";
 
@@ -10,107 +11,112 @@
 /* Design tokens                                                              */
 /* ------------------------------------------------------------------------- */
 
-/* Palette: "Kyoto dusk" — washi-paper cream, sumi navy ink, vermilion-rust
-   accent, slate-blue dusk. Light = paper, dark = night street. */
+/* Palette: "Seaside kiosk" — sun-bleached sand, sea-glass teal, blossom coral.
+   Light = a bright afternoon on the shore, dark = the same street after sunset. */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
-  --background: #f3ead9;
-  --foreground: #1d2d40;
-  --card: #f8f2e6;
-  --card-foreground: #1d2d40;
-  --popover: #faf5eb;
-  --popover-foreground: #1d2d40;
-  --primary: #1f3550;
-  --primary-foreground: #f5ecdb;
-  --secondary: #e8dcc6;
-  --secondary-foreground: #1f3550;
-  --muted: #ebe0cb;
-  --muted-foreground: #5f6f80;
-  --accent: #e6d8bf;
-  --accent-foreground: #1d2d40;
-  --destructive: #b23a2b;
-  --border: #dccdb1;
-  --input: #d3c2a4;
-  --ring: #b4572e;
+  --background: #fbf8f3;
+  --foreground: #263b3c;
+  --card: #ffffff;
+  --card-foreground: #263b3c;
+  --popover: #ffffff;
+  --popover-foreground: #263b3c;
+  --primary: #2b7a74;
+  --primary-foreground: #ffffff;
+  --secondary: #eef5f3;
+  --secondary-foreground: #23514d;
+  --muted: #f4efe7;
+  --muted-foreground: #6e807f;
+  --accent: #edf5f2;
+  --accent-foreground: #1f4542;
+  --destructive: #c8452f;
+  --border: #ece4d8;
+  --input: #e2d9cb;
+  --ring: #e3765e;
 
-  /* Brand accent (vermilion rust, like the 京都 mark) for focus, links & active state. */
-  --brand: #b4572e;
-  --brand-foreground: #fbf4e6;
-  --brand-soft: color-mix(in oklab, #b4572e 12%, transparent);
+  /* Brand accent (blossom coral) for focus, links & active state. */
+  --brand: #dd6a50;
+  --brand-foreground: #ffffff;
+  --brand-soft: color-mix(in oklab, #dd6a50 11%, transparent);
 
-  --success: #2f7d5b;
-  --warning: #c98f2e;
-  --info: #4c6c8c;
-  --plum: #7a4a6b;
+  --success: #3d8f6a;
+  --warning: #cf923a;
+  --info: #3a8ca4;
+  --plum: #c0657c;
 
-  --sidebar: #ebdfc8;
-  --sidebar-foreground: #2c3e52;
-  --sidebar-accent: #dfd0b4;
-  --sidebar-border: #d8c8aa;
+  --sidebar: #f6f1e9;
+  --sidebar-foreground: #4a5d5e;
+  --sidebar-accent: #e8f2ef;
+  --sidebar-border: #ece4d8;
 
-  --chart-1: #1f3550;
-  --chart-2: #b4572e;
-  --chart-3: #6f8aa3;
-  --chart-4: #c98f2e;
-  --chart-5: #2f7d5b;
+  --chart-1: #2b7a74;
+  --chart-2: #dd6a50;
+  --chart-3: #7fc0ba;
+  --chart-4: #cf923a;
+  --chart-5: #c0657c;
 
-  --heat-0: #e6d9c1;
-  --heat-1: color-mix(in oklab, #b4572e 28%, #e6d9c1);
-  --heat-2: color-mix(in oklab, #b4572e 50%, #e6d9c1);
-  --heat-3: color-mix(in oklab, #b4572e 75%, #e6d9c1);
-  --heat-4: #b4572e;
+  --heat-0: #f0ebe2;
+  --heat-1: color-mix(in oklab, #2b7a74 22%, #f0ebe2);
+  --heat-2: color-mix(in oklab, #2b7a74 45%, #f0ebe2);
+  --heat-3: color-mix(in oklab, #2b7a74 70%, #f0ebe2);
+  --heat-4: #2b7a74;
+
+  --shadow-soft: 0 1px 2px rgb(38 59 60 / 0.04), 0 4px 16px -6px rgb(38 59 60 / 0.08);
 }
 
 .dark {
-  --background: #131d29;
-  --foreground: #ece2cf;
-  --card: #192636;
-  --card-foreground: #ece2cf;
-  --popover: #1c2a3b;
-  --popover-foreground: #ece2cf;
-  --primary: #ece2cf;
-  --primary-foreground: #16212e;
-  --secondary: #213246;
-  --secondary-foreground: #ece2cf;
-  --muted: #1f2e40;
-  --muted-foreground: #9aa9b8;
-  --accent: #24364b;
-  --accent-foreground: #f2e9d8;
-  --destructive: #d8604b;
-  --border: color-mix(in oklab, #ece2cf 11%, transparent);
-  --input: color-mix(in oklab, #ece2cf 16%, transparent);
-  --ring: #d47a4e;
+  --background: #132224;
+  --foreground: #edf0ea;
+  --card: #18292b;
+  --card-foreground: #edf0ea;
+  --popover: #1b2e30;
+  --popover-foreground: #edf0ea;
+  --primary: #7cc6bd;
+  --primary-foreground: #0f2021;
+  --secondary: #1f3436;
+  --secondary-foreground: #e4ece8;
+  --muted: #1c3133;
+  --muted-foreground: #9db1ae;
+  --accent: #213a3c;
+  --accent-foreground: #f1f4ef;
+  --destructive: #e06a52;
+  --border: color-mix(in oklab, #edf0ea 10%, transparent);
+  --input: color-mix(in oklab, #edf0ea 15%, transparent);
+  --ring: #f0907a;
 
-  --brand: #d47a4e;
-  --brand-foreground: #16212e;
-  --brand-soft: color-mix(in oklab, #d47a4e 16%, transparent);
+  --brand: #f0907a;
+  --brand-foreground: #132224;
+  --brand-soft: color-mix(in oklab, #f0907a 15%, transparent);
 
-  --success: #4fa37d;
-  --warning: #e0aa4f;
-  --info: #8fb0cf;
-  --plum: #c48ab0;
+  --success: #5fb68c;
+  --warning: #e6b05c;
+  --info: #79c0d3;
+  --plum: #e39aac;
 
-  --sidebar: #0f1823;
-  --sidebar-foreground: #c9c0ae;
-  --sidebar-accent: #1d2c3d;
-  --sidebar-border: color-mix(in oklab, #ece2cf 9%, transparent);
+  --sidebar: #0f1c1e;
+  --sidebar-foreground: #c3cfcb;
+  --sidebar-accent: #1d3335;
+  --sidebar-border: color-mix(in oklab, #edf0ea 8%, transparent);
 
-  --chart-1: #a9bfd4;
-  --chart-2: #d47a4e;
-  --chart-3: #6f8aa3;
-  --chart-4: #e0aa4f;
-  --chart-5: #4fa37d;
+  --chart-1: #7cc6bd;
+  --chart-2: #f0907a;
+  --chart-3: #4f9a93;
+  --chart-4: #e6b05c;
+  --chart-5: #e39aac;
 
-  --heat-0: #1f2e40;
-  --heat-1: color-mix(in oklab, #d47a4e 30%, #1f2e40);
-  --heat-2: color-mix(in oklab, #d47a4e 52%, #1f2e40);
-  --heat-3: color-mix(in oklab, #d47a4e 76%, #1f2e40);
-  --heat-4: #d47a4e;
+  --heat-0: #1c3133;
+  --heat-1: color-mix(in oklab, #7cc6bd 28%, #1c3133);
+  --heat-2: color-mix(in oklab, #7cc6bd 50%, #1c3133);
+  --heat-3: color-mix(in oklab, #7cc6bd 74%, #1c3133);
+  --heat-4: #7cc6bd;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 6px 18px -8px rgb(0 0 0 / 0.35);
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   --radius-sm: calc(var(--radius) - 3px);
@@ -170,9 +176,14 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv11", "ss01", "ss03";
     font-size: 14px;
     line-height: 1.5;
+  }
+  /* Page titles use the soft display serif; everything else stays in the sans. */
+  h1 {
+    font-family: var(--font-display);
+    font-variation-settings: "SOFT" 60;
+    letter-spacing: -0.01em;
   }
   ::selection {
     background: var(--brand-soft);
@@ -192,6 +203,9 @@
     font-size: 11px;
     line-height: 16px;
   }
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -205,7 +219,7 @@
   @apply text-[15px] leading-7 text-foreground;
 }
 .doc :where(h1) { @apply mt-8 mb-3 text-2xl font-semibold tracking-tight; }
-.doc :where(h2) { @apply mt-7 mb-2 text-xl font-semibold tracking-tight; }
+.doc :where(h2) { @apply mt-7 mb-2 text-xl font-semibold tracking-tight; font-family: var(--font-display); }
 .doc :where(h3) { @apply mt-6 mb-2 text-base font-semibold; }
 .doc :where(p) { @apply my-2; }
 .doc :where(ul) { @apply my-2 list-disc pl-6; }

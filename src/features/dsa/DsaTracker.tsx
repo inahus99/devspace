@@ -120,7 +120,7 @@ export function DsaTracker({ workspaceId, folderId }: { workspaceId?: string; fo
         <Stat label="Solved" value={stats.solved} icon={CheckCircle2} hint={stats.total ? `${Math.round((stats.solved / stats.total) * 100)}% of all` : undefined} />
         <Stat label="Solved this month" value={stats.solvedThisMonth} icon={Target} />
         <Stat label="Due for revision" value={stats.due} icon={RotateCcw} />
-        <div className="col-span-2 rounded-lg border bg-card px-4 py-3 lg:col-span-1">
+        <div className="col-span-2 rounded-xl border bg-card shadow-soft px-4 py-3 lg:col-span-1">
           <div className="text-xs text-muted-foreground">Difficulty mix</div>
           <div className="mt-2 space-y-1.5">
             {DSA_DIFFICULTIES.map((d) => (
@@ -279,7 +279,7 @@ function ProblemTable({ problems, showWorkspace, today, queue }: { problems: Dsa
   const update = useUpdate("dsa");
   const wsMap = useWorkspaceMap();
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-xl border bg-card shadow-soft">
       <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">

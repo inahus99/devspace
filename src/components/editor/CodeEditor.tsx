@@ -104,7 +104,7 @@ export function CodeEditor({
   const lines = value.split("\n").length;
   const computed = height === "auto" ? Math.min(Math.max(lines * 19 + 24, 120), maxHeight) : height;
   return (
-    <div className={cn("overflow-hidden rounded-lg border bg-card", className)}>
+    <div className={cn("overflow-hidden rounded-xl border bg-card shadow-soft", className)}>
       <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-2 py-1">
         <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           {onLanguageChange && !readOnly ? (

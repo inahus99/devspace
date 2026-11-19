@@ -87,7 +87,7 @@ export function SnippetsList({ workspaceId, folderId }: { workspaceId: string; f
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {data.map((s) => (
-            <article key={s.id} className="group flex flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:border-foreground/20">
+            <article key={s.id} className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-colors hover:border-foreground/20">
               <Link to={routes.snippet(s.id)} className="flex-1 px-4 pt-3 pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="truncate text-sm font-medium">{s.title}</h3>

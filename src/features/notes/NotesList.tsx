@@ -69,7 +69,7 @@ export function NotesList({ workspaceId, folderId }: { workspaceId: string; fold
           }
         />
       ) : (
-        <ul className="divide-y rounded-lg border bg-card">
+        <ul className="divide-y rounded-xl border bg-card shadow-soft">
           {data.map((n) => (
             <li key={n.id} className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-accent/40">
               {n.format === "markdown" ? (

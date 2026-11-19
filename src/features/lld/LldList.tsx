@@ -100,7 +100,7 @@ function LldCard({ exercise: e, showWorkspace }: { exercise: LldExercise; showWo
   return (
     <Link
       to={routes.lld(e.id)}
-      className="group flex flex-col gap-2 rounded-lg border bg-card p-4 transition-colors hover:border-foreground/15 hover:bg-accent/30"
+      className="group flex flex-col gap-2 rounded-xl border bg-card shadow-soft p-4 transition-colors hover:border-foreground/15 hover:bg-accent/30"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="line-clamp-2 font-medium leading-snug">{e.title}</h3>

@@ -92,7 +92,7 @@ function WorkspaceCard({ ws, summary, actions }: { ws: Workspace; summary?: Work
       }
     >
       {(menuButton) => (
-        <div className="group relative flex flex-col overflow-hidden rounded-lg border bg-card p-4 transition-colors hover:border-foreground/20">
+        <div className="group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft p-4 transition-colors hover:border-foreground/20">
           {ws.bannerUrl ? (
             <img
               src={ws.bannerUrl}

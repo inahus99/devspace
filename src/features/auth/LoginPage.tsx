@@ -60,7 +60,7 @@ export function LoginPage() {
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <img src="/favicon.svg" alt="" className="size-10" />
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">{effective === "login" ? "Sign in to DevSpace" : "Create your DevSpace"}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{effective === "login" ? "Sign in to DevSpace" : "Create your DevSpace"}</h1>
             <p className="text-sm text-muted-foreground">Your personal developer learning OS</p>
           </div>
         </div>

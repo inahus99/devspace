@@ -40,7 +40,7 @@ function NavItem({ to, label, icon: Icon, end, collapsed }: { to: string; label:
       className={({ isActive }) =>
         cn(
           "flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground",
-          isActive && "bg-sidebar-accent font-medium text-foreground",
+          isActive && "bg-sidebar-accent font-medium text-primary",
           collapsed && "justify-center px-0",
         )
       }
@@ -324,7 +324,7 @@ function WorkspaceList({
           <div
             className={cn(
               "group flex h-8 items-center gap-1 rounded-md pr-1 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
-              isActive && "bg-sidebar-accent font-medium text-foreground",
+              isActive && "bg-sidebar-accent font-medium text-primary",
               dropTarget === ws.id && "ring-1 ring-brand",
               collapsed && "justify-center pr-0",
             )}
