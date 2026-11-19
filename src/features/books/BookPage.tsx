@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, CalendarPlus, ImagePlus, Link2, Pencil, Quote, Trash2, X } from "lucide-react";
+import { ArrowLeft, BookOpen, BookOpenText, CalendarPlus, Download, FileUp, ImagePlus, Link2, NotebookPen, Pencil, Quote, Trash2, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -17,7 +17,9 @@ import { errorMessage } from "@/lib/api";
 import { formatDay, todayISO } from "@/lib/dates";
 import {
   uploadFile,
+  useAttachments,
   useBookProgress,
+  useDeleteAttachment,
   useDelete,
   useDeleteReadingLog,
   useHighlightMutations,
@@ -28,7 +30,9 @@ import {
 } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { useUi } from "@/stores/ui";
+import { formatBytes } from "@/components/common/Attachments";
 import { BookCover, percent, ProgressBar } from "./BookCover";
+import { BOOK_FILE_LABEL } from "./bookFile";
 
 export default function BookPage() {
   const { id } = useParams<{ id: string }>();
@@ -160,6 +164,8 @@ function BookDetail({ book }: { book: Book }) {
 
           <ProgressCard book={book} pct={pct} />
 
+          <BookFileCard book={book} />
+
           <Field label="Description" htmlFor="book-desc">
             <AutoTextarea id="book-desc" value={text.description} onChange={(v) => edit("description", v)} minRows={2} placeholder="What's this book about?" />
           </Field>
@@ -282,6 +288,114 @@ function CoverEditor({ book }: { book: Book }) {
             </Button>
           ) : null}
         </div>
+      )}
+    </div>
+  );
+}
+
+/** The book's own PDF: upload once, then read it in DevSpace with a notebook beside it. */
+function BookFileCard({ book }: { book: Book }) {
+  const files = useAttachments({ bookId: book.id });
+  const delFile = useDeleteAttachment();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const all = (files.data ?? []).filter((a) => a.label === BOOK_FILE_LABEL).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const file = all[0];
+
+  const onFile = async (f: File) => {
+    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Choose a PDF file");
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadFile(f, { bookId: book.id, workspaceId: book.workspaceId, label: BOOK_FILE_LABEL });
+      for (const old of all) await delFile.mutateAsync(old.id).catch(() => {});
+      await files.refetch();
+      toast.success("PDF uploaded. Open Read to start.");
+    } catch (err) {
+      toast.error(`Upload failed: ${errorMessage(err)}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-soft">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) void onFile(f);
+        }}
+      />
+      {files.isLoading ? (
+        <Spinner />
+      ) : file ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <BookOpenText className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{file.fileName}</p>
+            <p className="text-2xs text-muted-foreground">
+              {formatBytes(file.sizeBytes)} · uploaded {formatDay(file.createdAt.slice(0, 10), "MMM d, yyyy")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <Button size="sm" asChild>
+              <Link to={routes.bookReader(book.id)}>
+                <BookOpen /> Read
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link to={routes.bookReader(book.id, { notes: true })}>
+                <NotebookPen /> Read with notes
+              </Link>
+            </Button>
+            <Button size="icon-sm" variant="ghost" asChild>
+              <a href={`${file.url}?download=1`} aria-label="Download PDF" title="Download PDF">
+                <Download />
+              </a>
+            </Button>
+            <Button size="icon-sm" variant="ghost" onClick={() => inputRef.current?.click()} disabled={uploading} aria-label="Replace PDF" title="Replace PDF">
+              {uploading ? <Spinner /> : <FileUp />}
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Remove PDF"
+              title="Remove PDF"
+              onClick={() =>
+                void confirm({ title: "Remove this book's PDF?", description: "Your progress, highlights and notebook stay.", destructive: true }).then(
+                  (ok) => ok && delFile.mutate(file.id),
+                )
+              }
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="flex w-full items-center gap-3 rounded-lg border border-dashed px-4 py-4 text-left transition-colors hover:border-primary/40 hover:bg-accent/40"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+            {uploading ? <Spinner /> : <FileUp className="size-5" />}
+          </span>
+          <span>
+            <span className="block text-sm font-medium">{uploading ? "Uploading…" : "Upload the book's PDF"}</span>
+            <span className="block text-xs text-muted-foreground">Read it here, take handwritten notes beside it, and your page is saved as you go.</span>
+          </span>
+        </button>
       )}
     </div>
   );

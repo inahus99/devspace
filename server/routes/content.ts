@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, lte, or, sql } from "drizzle-orm";
 import { Router } from "express";
 import { REVIEW_INTERVALS_DAYS } from "../../shared/constants.ts";
 import {
@@ -71,6 +71,7 @@ export const diagramsRouter = crudRouter({
   createSchema: diagramCreateSchema,
   updateSchema: diagramUpdateSchema,
   searchColumns: [diagrams.title],
+  filters: (req) => [qs(req, "bookId") ? eq(diagrams.bookId, qs(req, "bookId")!) : undefined],
   sortable: { updated: diagrams.updatedAt, created: diagrams.createdAt, title: diagrams.title },
   defaultSort: "updated",
   // Lists carry the thumbnail but not the (possibly image-heavy) scene.
@@ -79,6 +80,7 @@ export const diagramsRouter = crudRouter({
     userId: diagrams.userId,
     workspaceId: diagrams.workspaceId,
     folderId: diagrams.folderId,
+    bookId: diagrams.bookId,
     title: diagrams.title,
     preview: diagrams.preview,
     isFavorite: diagrams.isFavorite,
@@ -324,7 +326,27 @@ booksRouter.post("/:id/progress", async (req, res) => {
   }
   const row = await db.transaction(async (tx) => {
     if (page !== book.currentPage) {
-      await tx.insert(readingLogs).values({ userId, bookId: book.id, loggedOn: date, fromPage: book.currentPage, toPage: page });
+      // Reading on in the same session (e.g. the PDF reader saving as you go) extends today's
+      // last log instead of adding a new one per save.
+      const [last] =
+        page > book.currentPage
+          ? await tx
+              .select({ id: readingLogs.id })
+              .from(readingLogs)
+              .where(
+                and(
+                  eq(readingLogs.bookId, book.id),
+                  eq(readingLogs.userId, userId),
+                  eq(readingLogs.loggedOn, date),
+                  eq(readingLogs.toPage, book.currentPage),
+                  lte(readingLogs.fromPage, book.currentPage),
+                ),
+              )
+              .orderBy(desc(readingLogs.createdAt))
+              .limit(1)
+          : [];
+      if (last) await tx.update(readingLogs).set({ toPage: page }).where(eq(readingLogs.id, last.id));
+      else await tx.insert(readingLogs).values({ userId, bookId: book.id, loggedOn: date, fromPage: book.currentPage, toPage: page });
     }
     const [updated] = await tx.update(books).set(values).where(eq(books.id, book.id)).returning();
     return updated!;

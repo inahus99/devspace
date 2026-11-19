@@ -147,6 +147,7 @@ const zDiagramScene = z.object({
 export const diagramCreateSchema = z.object({
   workspaceId: zId,
   folderId: zOptId,
+  bookId: zOptId,
   title: z.string().trim().min(1, "Title is required").max(300),
   scene: zDiagramScene.optional(),
   preview: z

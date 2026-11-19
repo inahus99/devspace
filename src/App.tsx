@@ -17,6 +17,7 @@ const WorkspacePage = lazy(() => import("@/features/workspaces/WorkspacePage"));
 const NotePage = lazy(() => import("@/features/notes/NotePage"));
 const SnippetPage = lazy(() => import("@/features/snippets/SnippetPage"));
 const DiagramPage = lazy(() => import("@/features/diagrams/DiagramPage"));
+const BookReaderPage = lazy(() => import("@/features/books/BookReaderPage"));
 const DsaProblemPage = lazy(() => import("@/features/dsa/DsaProblemPage"));
 const LldExercisePage = lazy(() => import("@/features/lld/LldExercisePage"));
 const ResourceLibraryPage = lazy(() => import("@/features/resources/ResourceLibraryPage"));
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
           { path: "resources", element: <ResourceLibraryPage /> },
           { path: "books", element: <BookshelfPage /> },
           { path: "books/:id", element: <BookPage /> },
+          { path: "books/:id/read", element: <BookReaderPage /> },
           // The daily planner was folded into the calendar's Day view; keep old links working.
           { path: "planner", element: <PlannerRedirect /> },
           { path: "calendar", element: <CalendarPage /> },

@@ -11,6 +11,7 @@ import {
   FolderTree,
   HelpCircle,
   LayoutGrid,
+  NotebookPen,
   Link2,
   type LucideIcon,
   PenTool,
@@ -749,6 +750,12 @@ function DiagramsSection({
       { workspaceId, folderId, title: "Untitled diagram" },
       { onSuccess: (d) => navigate(routes.diagram(d.id)) },
     );
+  // A notebook is a drawing that starts on an A4 page; it saves as a multi-page PDF.
+  const newNotebook = () =>
+    create.mutate(
+      { workspaceId, folderId, title: "Untitled notebook" },
+      { onSuccess: (d) => navigate(`${routes.diagram(d.id)}?notebook=1`) },
+    );
 
   return (
     <section className="rounded-xl border bg-card shadow-soft">
@@ -757,22 +764,33 @@ function DiagramsSection({
           <span className="flex size-6 items-center justify-center rounded-md bg-secondary text-primary">
             <PenTool className="size-3.5" />
           </span>
-          Diagrams
+          Diagrams & notebooks
           {diagrams.length ? (
             <span className="font-normal text-muted-foreground">
               {diagrams.length}
             </span>
           ) : null}
         </h3>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-primary"
-          onClick={newDiagram}
-          disabled={create.isPending}
-        >
-          <Plus /> Diagram
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-primary"
+            onClick={newNotebook}
+            disabled={create.isPending}
+          >
+            <NotebookPen /> Notebook
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-primary"
+            onClick={newDiagram}
+            disabled={create.isPending}
+          >
+            <Plus /> Diagram
+          </Button>
+        </div>
       </header>
       <div className="p-3">
         {loading ? (
@@ -784,7 +802,8 @@ function DiagramsSection({
             disabled={create.isPending}
             className="w-full rounded-lg px-3 py-5 text-center text-xs text-muted-foreground transition-colors hover:bg-accent/50"
           >
-            Sketch architectures, flows and data structures with Excalidraw.{" "}
+            Sketch architectures and flows, or handwrite notes on A4 pages
+            with a pen and save them as PDF.{" "}
             <span className="font-medium text-primary">Draw one</span>
           </button>
         ) : (

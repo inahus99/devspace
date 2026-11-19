@@ -18,6 +18,7 @@ export const routes = {
   dsa: (id: string) => `/dsa/${id}`,
   lld: (id: string) => `/lld/${id}`,
   book: (id: string) => `/books/${id}`,
+  bookReader: (id: string, opts?: { notes?: boolean }) => `/books/${id}/read${opts?.notes ? "?notes=1" : ""}`,
   resources: (opts?: { highlight?: string }) => (opts?.highlight ? `/resources?highlight=${opts.highlight}` : "/resources"),
   books: () => "/books",
   /** The daily plan lives in the calendar's Day view. */

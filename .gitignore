@@ -9,3 +9,4 @@ uploads
 
 # Generated from node_modules by scripts/copy-excalidraw-fonts.mjs
 public/excalidraw/
+public/pdfjs/

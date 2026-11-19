@@ -13,7 +13,7 @@ const schema = z.object({
   ALLOW_REGISTRATION: bool,
   STORAGE_DRIVER: z.enum(["disk", "s3"]).default("disk"),
   UPLOAD_DIR: z.string().default("./uploads"),
-  MAX_UPLOAD_MB: z.coerce.number().positive().default(25),
+  MAX_UPLOAD_MB: z.coerce.number().positive().default(100),
   S3_BUCKET: z.string().optional(),
   S3_REGION: z.string().default("auto"),
   S3_ENDPOINT: z.string().optional(),
