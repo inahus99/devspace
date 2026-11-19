@@ -11,6 +11,7 @@ import { type Theme, useTheme } from "@/hooks/useTheme";
 import { api, downloadUrl, errorMessage } from "@/lib/api";
 import { useMe, useUpdateProfile } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { GitHubSyncSection } from "./GitHubSyncSection";
 
 export default function SettingsPage() {
   return (
@@ -20,6 +21,7 @@ export default function SettingsPage() {
         <ProfileSection />
         <AppearanceSection />
         <ExportSection />
+        <GitHubSyncSection />
         <PasswordSection />
       </div>
     </Page>

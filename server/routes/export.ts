@@ -32,12 +32,12 @@ turndown.addRule("taskItem", {
   },
 });
 
-function sanitizeName(name: string, fallback = "untitled"): string {
+export function sanitizeName(name: string, fallback = "untitled"): string {
   const cleaned = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").replace(/\s+/g, " ").trim().slice(0, 80);
   return cleaned.replace(/^\.+/, "") || fallback;
 }
 
-function uniquePath(used: Set<string>, base: string, ext: string): string {
+export function uniquePath(used: Set<string>, base: string, ext: string): string {
   let candidate = `${base}${ext}`;
   for (let i = 2; used.has(candidate.toLowerCase()); i++) candidate = `${base} (${i})${ext}`;
   used.add(candidate.toLowerCase());
@@ -57,7 +57,7 @@ function noteBodyMarkdown(note: NoteRow): string {
   return note.contentHtml ? turndown.turndown(note.contentHtml) : note.plainText;
 }
 
-function noteToMarkdown(note: NoteRow & { tags: string[] }, ctx: { workspace?: string; folder?: string }): string {
+export function noteToMarkdown(note: NoteRow & { tags: string[] }, ctx: { workspace?: string; folder?: string }): string {
   return (
     yamlFrontmatter({
       title: note.title,
@@ -79,7 +79,7 @@ function csvCell(v: unknown): string {
   const s = v instanceof Date ? v.toISOString() : Array.isArray(v) ? v.join("; ") : String(v);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
-function toCsv(rows: Record<string, unknown>[], columns: string[]): string {
+export function toCsv(rows: Record<string, unknown>[], columns: string[]): string {
   return [columns.join(","), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(","))].join("\r\n") + "\r\n";
 }
 
@@ -107,7 +107,7 @@ function stamp() {
 }
 
 /** Build "a/b/c" folder paths for every folder id. */
-function folderPaths(rows: (typeof folders.$inferSelect)[]): Map<string, string> {
+export function folderPaths(rows: (typeof folders.$inferSelect)[]): Map<string, string> {
   const byId = new Map(rows.map((f) => [f.id, f]));
   const cache = new Map<string, string>();
   const resolve = (id: string, depth = 0): string => {
@@ -123,7 +123,7 @@ function folderPaths(rows: (typeof folders.$inferSelect)[]): Map<string, string>
   return cache;
 }
 
-async function loadAll(userId: string) {
+export async function loadAll(userId: string) {
   const own = <T extends { userId: unknown }>(t: T) => eq((t as unknown as typeof notes).userId, userId);
   const [
     ws, fs, ns, sn, dg, rs, dp, ds, ll, bk, hl, rl, at, ac, tg, ct, me,
@@ -156,7 +156,7 @@ async function loadAll(userId: string) {
 
 const attachmentArchivePath = (a: typeof attachments.$inferSelect) => `attachments/${a.id}-${sanitizeName(a.fileName, "file")}`;
 
-function backupDocument(data: Awaited<ReturnType<typeof loadAll>>) {
+export function backupDocument(data: Awaited<ReturnType<typeof loadAll>>) {
   const { profile, ...rest } = data;
   return {
     format: BACKUP_FORMAT,
@@ -167,14 +167,14 @@ function backupDocument(data: Awaited<ReturnType<typeof loadAll>>) {
   };
 }
 
-const ACTIVITY_COLUMNS = [
+export const ACTIVITY_COLUMNS = [
   "date", "startTime", "endTime", "title", "workspace", "completed", "plannedMinutes", "actualMinutes", "description", "notes", "completedAt", "id",
 ];
-const DSA_COLUMNS = [
+export const DSA_COLUMNS = [
   "title", "platform", "url", "topic", "difficulty", "status", "attemptedOn", "solvedOn", "timeComplexity", "spaceComplexity",
   "reviewCount", "lastReviewedOn", "nextReviewOn", "tags", "workspace", "id",
 ];
-const BOOK_COLUMNS = [
+export const BOOK_COLUMNS = [
   "title", "author", "status", "totalPages", "currentPage", "progressPercent", "startedOn", "completedOn", "tags", "description", "id",
 ];
 
