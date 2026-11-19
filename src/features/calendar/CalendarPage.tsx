@@ -171,71 +171,101 @@ function MonthView({
   const days = eachDay(range.from, range.to);
   const today = todayISO();
   const totals = useMemo(() => totalsByDate([...byDate.values()].flat()), [byDate]);
-  const headers = Array.from({ length: 7 }, (_, i) => format(addDays(startOfWeek(new Date(), { weekStartsOn }), i), "EEE"));
+  const headerDays = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date(), { weekStartsOn }), i));
+  const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
   const MAX = 3;
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
-      <div className="grid grid-cols-7 border-b bg-muted/40 text-xs text-muted-foreground">
-        {headers.map((h) => (
-          <div key={h} className="px-2 py-1.5">
-            {h}
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
+      <div className="grid grid-cols-7 border-b bg-muted/50">
+        {headerDays.map((h) => (
+          <div
+            key={h.toISOString()}
+            className={cn("px-3 py-2.5 text-2xs font-semibold tracking-[0.14em] uppercase", isWeekend(h) ? "text-brand/80" : "text-muted-foreground")}
+          >
+            {format(h, "EEE")}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7" style={{ gridAutoRows: "minmax(112px, 1fr)" }}>
+      <div className="grid grid-cols-7" style={{ gridAutoRows: "minmax(124px, 1fr)" }}>
         {days.map((d, i) => {
+          const date = fromISODate(d);
           const items = byDate.get(d) ?? [];
           const t = totals.get(d);
-          const inMonth = isSameMonth(fromISODate(d), anchor);
+          const inMonth = isSameMonth(date, anchor);
+          const isToday = d === today;
+          const isPast = d < today;
+          const doneRatio = t && t.total ? t.completed / t.total : 0;
           return (
             <div
               key={d}
               className={cn(
-                "group relative flex min-w-0 flex-col gap-0.5 border-border p-1.5",
+                "group relative flex min-w-0 cursor-pointer flex-col gap-1 border-border p-2 transition-colors",
                 i % 7 !== 6 && "border-r",
                 i < days.length - 7 && "border-b",
-                !inMonth && "bg-muted/30",
+                inMonth ? (isWeekend(date) ? "bg-muted/25" : "") : "bg-muted/55",
+                "hover:bg-accent/40",
+                isToday && "bg-brand-soft hover:bg-brand-soft",
               )}
               onClick={(e) => {
                 if (e.target === e.currentTarget) openCapture("activity", { date: d });
               }}
             >
+              {isToday ? <span className="pointer-events-none absolute inset-0 ring-1 ring-brand/40 ring-inset" aria-hidden /> : null}
               <div className="flex items-center justify-between gap-1">
                 <button
                   type="button"
                   onClick={() => onOpenDay(d)}
                   className={cn(
-                    "flex size-6 items-center justify-center rounded-full text-xs tabular hover:bg-accent",
-                    d === today ? "bg-brand font-semibold text-brand-foreground hover:bg-brand" : inMonth ? "" : "text-muted-foreground",
+                    "flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-medium tabular transition-colors",
+                    isToday
+                      ? "bg-brand text-brand-foreground shadow-soft"
+                      : inMonth
+                        ? cn("hover:bg-secondary hover:text-primary", isPast && "text-foreground/70")
+                        : "text-muted-foreground/60 hover:bg-secondary",
                   )}
                   aria-label={`Open ${formatDay(d, "EEEE, MMMM d")}`}
                 >
-                  {format(fromISODate(d), "d")}
+                  {date.getDate() === 1 ? format(date, "MMM d") : format(date, "d")}
                 </button>
                 <div className="flex items-center gap-1">
                   {t && t.actualMinutes > 0 ? (
-                    <span className="text-2xs text-muted-foreground tabular" title="Actual study time">
+                    <span className="rounded-full bg-success/12 px-1.5 py-px text-2xs font-medium whitespace-nowrap text-success tabular" title="Actual study time">
                       {formatMinutes(t.actualMinutes)}
                     </span>
                   ) : null}
                   <button
                     type="button"
                     onClick={() => openCapture("activity", { date: d })}
-                    className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-accent hover:text-foreground focus-visible:opacity-100"
+                    className="flex size-6 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-card hover:text-primary focus-visible:opacity-100"
                     aria-label={`Add activity on ${formatDay(d, "MMMM d")}`}
                   >
                     <Plus className="size-3.5" />
                   </button>
                 </div>
               </div>
-              {items.slice(0, MAX).map((a) => (
-                <ActivityChip key={a.id} activity={a} />
-              ))}
-              {items.length > MAX ? (
-                <button type="button" onClick={() => onOpenDay(d)} className="px-1 text-left text-2xs text-muted-foreground hover:text-foreground">
-                  +{items.length - MAX} more
-                </button>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                {items.slice(0, MAX).map((a) => (
+                  <ActivityChip key={a.id} activity={a} />
+                ))}
+                {items.length > MAX ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenDay(d)}
+                    className="self-start rounded-md px-1.5 py-0.5 text-2xs font-medium text-primary transition-colors hover:bg-secondary"
+                  >
+                    +{items.length - MAX} more
+                  </button>
+                ) : null}
+              </div>
+              {t && t.total ? (
+                <div
+                  className="mt-auto h-1 overflow-hidden rounded-full bg-muted"
+                  title={`${t.completed} of ${t.total} done`}
+                  aria-label={`${t.completed} of ${t.total} done`}
+                >
+                  <div className="h-full rounded-full bg-success transition-[width]" style={{ width: `${doneRatio * 100}%` }} />
+                </div>
               ) : null}
             </div>
           );
@@ -255,17 +285,14 @@ function ActivityChip({ activity }: { activity: ActivityWithLink }) {
       <button
         type="button"
         className={cn(
-          "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left text-2xs hover:bg-accent",
+          "flex w-full min-w-0 items-center gap-1.5 rounded-md border-l-2 px-1.5 py-[3px] text-left text-2xs transition-[filter] hover:brightness-95 dark:hover:brightness-125",
           done && "text-muted-foreground",
         )}
+        style={{ borderLeftColor: color, backgroundColor: `color-mix(in oklab, ${color} ${done ? 7 : 14}%, transparent)` }}
       >
-        {done ? (
-          <Check className="size-3 shrink-0 text-success" strokeWidth={3} aria-label="Completed" />
-        ) : (
-          <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-        )}
-        {activity.startTime ? <span className="shrink-0 tabular text-muted-foreground">{formatTime12(activity.startTime)}</span> : null}
-        <span className={cn("truncate", done && "line-through decoration-muted-foreground/50")}>{activity.title}</span>
+        {done ? <Check className="size-3 shrink-0 text-success" strokeWidth={3} aria-label="Completed" /> : null}
+        {activity.startTime ? <span className="shrink-0 font-medium tabular opacity-70">{formatTime12(activity.startTime)}</span> : null}
+        <span className={cn("truncate font-medium", done && "font-normal line-through decoration-muted-foreground/50")}>{activity.title}</span>
       </button>
     </ActivityPopover>
   );
