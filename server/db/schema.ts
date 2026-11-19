@@ -103,7 +103,7 @@ export const workspaces = pgTable(
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
     icon: text("icon").notNull().default("folder"),
-    color: text("color").notNull().default("#1f3550"),
+    color: text("color").notNull().default("#2b7a74"),
     kind: workspaceKind("kind").notNull().default("general"),
     /** Header banner: an uploaded file (/api/files/:id) or an external https URL. */
     bannerUrl: text("banner_url"),

@@ -5,6 +5,7 @@ import { WORKSPACE_KIND_LABELS } from "@shared/constants";
 import { formatMinutes } from "@shared/time";
 import { AttachmentsPanel } from "@/components/common/Attachments";
 import { Banner, type BannerPatch } from "@/components/common/Banner";
+import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { flattenFolders } from "@/components/common/fields";
 import { ErrorState, FullPageSpinner, Section, Stat } from "@/components/common/states";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
@@ -98,6 +99,7 @@ export default function WorkspacePage() {
   const capture = (kind: CaptureKind) => openCapture(kind, { workspaceId: ws.id, folderId: folder?.id ?? null });
   const pct = summary?.progress != null ? Math.round(summary.progress * 100) : null;
   // Inside a folder, the banner is the one of its main (top-level) folder; otherwise the workspace's.
+  // Without its own image a folder shows the workspace banner, and a workspace shows the default artwork.
   const mainFolder = folderPath[0] ?? null;
   const banner = mainFolder
     ? {
@@ -106,6 +108,8 @@ export default function WorkspacePage() {
         position: mainFolder.bannerPosition,
         name: mainFolder.name,
         eyebrow: `${ws.name} · ${mainFolder.name}`,
+        fallbackUrl: ws.bannerUrl || DEFAULT_BANNER_URL,
+        fallbackPosition: ws.bannerUrl ? ws.bannerPosition : 50,
         uploadTarget: { workspaceId: ws.id, folderId: mainFolder.id },
         onChange: (patch: BannerPatch) => updateFolder.mutateAsync({ id: mainFolder.id, ...patch }),
       }
@@ -115,6 +119,8 @@ export default function WorkspacePage() {
         position: ws.bannerPosition,
         name: ws.name,
         eyebrow: undefined,
+        fallbackUrl: DEFAULT_BANNER_URL,
+        fallbackPosition: 50,
         uploadTarget: { workspaceId: ws.id },
         onChange: (patch: BannerPatch) => updateWorkspace.mutateAsync({ id: ws.id, ...patch }),
       };
@@ -122,7 +128,7 @@ export default function WorkspacePage() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-8">
-      <Banner {...bannerProps} key={bannerKey} className={banner.url ? "mb-5" : "-mt-3 mb-1"} />
+      <Banner {...bannerProps} key={bannerKey} className="mb-5" />
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">

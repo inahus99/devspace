@@ -25,6 +25,10 @@ interface BannerProps {
   onChange: (patch: BannerPatch) => Promise<unknown>;
   /** Used in alt text and button labels, e.g. the workspace or folder name. */
   name: string;
+  /** Image shown when no banner is set (e.g. the default artwork). It can't be repositioned or removed. */
+  fallbackUrl?: string;
+  /** Focal point for the fallback image (defaults to centred). */
+  fallbackPosition?: number;
   /** Tiny label shown on the banner, e.g. "Folder" (optional). */
   eyebrow?: string;
   className?: string;
@@ -36,7 +40,9 @@ const MAX_BANNER_MB = 15;
  * Header banner for a workspace or top-level folder: upload, paste or drop an image, use a URL,
  * drag to reposition, or remove. Without an image it collapses to a quiet "Add banner" control.
  */
-export function Banner({ url, position, uploadTarget, onChange, name, eyebrow, className }: BannerProps) {
+export function Banner({ url, position, uploadTarget, onChange, name, fallbackUrl, fallbackPosition = 50, eyebrow, className }: BannerProps) {
+  const shown = url || fallbackUrl;
+  const isDefault = !url && !!fallbackUrl;
   const [busy, setBusy] = useState(false);
   const [urlOpen, setUrlOpen] = useState(false);
   const [repositioning, setRepositioning] = useState(false);
@@ -48,7 +54,7 @@ export function Banner({ url, position, uploadTarget, onChange, name, eyebrow, c
   const drag = useRef<{ y: number; pos: number } | null>(null);
 
   useEffect(() => setDraftPos(position), [position]);
-  useEffect(() => setBroken(false), [url]);
+  useEffect(() => setBroken(false), [shown]);
 
   async function upload(file: File | undefined) {
     if (!file) return;
@@ -158,7 +164,7 @@ export function Banner({ url, position, uploadTarget, onChange, name, eyebrow, c
     </DropdownMenu>
   );
 
-  if (!url) {
+  if (!shown) {
     return (
       <div
         className={cn(
@@ -196,12 +202,12 @@ export function Banner({ url, position, uploadTarget, onChange, name, eyebrow, c
         <div className="grid h-full place-items-center text-sm text-muted-foreground">Banner image couldn't be loaded</div>
       ) : (
         <img
-          src={url}
-          alt={`${name} banner`}
+          src={shown}
+          alt={isDefault ? "" : `${name} banner`}
           draggable={false}
           onError={() => setBroken(true)}
           className={cn("size-full object-cover select-none", repositioning && "cursor-grab active:cursor-grabbing")}
-          style={{ objectPosition: `50% ${repositioning ? draftPos : position}%` }}
+          style={{ objectPosition: `50% ${isDefault ? fallbackPosition : repositioning ? draftPos : position}%` }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -237,22 +243,24 @@ export function Banner({ url, position, uploadTarget, onChange, name, eyebrow, c
             hovered || busy ? "opacity-100" : "opacity-100 sm:opacity-0",
           )}
         >
-          {changeMenu("Change", <ImagePlus />, "overlay")}
-          {!broken ? (
+          {changeMenu(isDefault ? "Add banner" : "Change", <ImagePlus />, "overlay")}
+          {!broken && !isDefault ? (
             <Button size="sm" variant="secondary" className="h-7 bg-background/85 backdrop-blur hover:bg-background" onClick={() => setRepositioning(true)}>
               <Move /> Reposition
             </Button>
           ) : null}
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-7 bg-background/85 backdrop-blur hover:bg-background"
-            disabled={busy}
-            onClick={() => void remove()}
-            aria-label="Remove banner"
-          >
-            <Trash2 />
-          </Button>
+          {!isDefault ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-7 bg-background/85 backdrop-blur hover:bg-background"
+              disabled={busy}
+              onClick={() => void remove()}
+              aria-label={fallbackUrl ? "Use the default banner" : "Remove banner"}
+            >
+              <Trash2 />
+            </Button>
+          ) : null}
         </div>
       )}
       {picker}

@@ -8,6 +8,7 @@ import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
 import { ActionMenus } from "@/components/layout/menu";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { timeAgo } from "@/lib/dates";
 import { useWorkspaces, useWorkspaceSummaries } from "@/lib/queries";
 import { routes } from "@/lib/routes";
@@ -93,18 +94,16 @@ function WorkspaceCard({ ws, summary, actions }: { ws: Workspace; summary?: Work
     >
       {(menuButton) => (
         <div className="group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-soft p-4 transition-colors hover:border-foreground/20">
-          {ws.bannerUrl ? (
-            <img
-              src={ws.bannerUrl}
-              alt=""
-              loading="lazy"
-              className="-mx-4 -mt-4 mb-4 h-24 w-[calc(100%+2rem)] max-w-none object-cover"
-              style={{ objectPosition: `50% ${ws.bannerPosition}%` }}
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          ) : (
-            <div className="-mx-4 -mt-4 mb-4 h-1" style={{ background: ws.color }} />
-          )}
+          <img
+            src={ws.bannerUrl || DEFAULT_BANNER_URL}
+            alt=""
+            loading="lazy"
+            className="-mx-4 -mt-4 mb-4 h-24 w-[calc(100%+2rem)] max-w-none object-cover"
+            style={{ objectPosition: `50% ${ws.bannerUrl ? ws.bannerPosition : 50}%` }}
+            onError={(e) => {
+              if (!e.currentTarget.src.endsWith(DEFAULT_BANNER_URL)) e.currentTarget.src = DEFAULT_BANNER_URL;
+            }}
+          />
           <div className="flex items-start justify-between gap-2">
             <Link to={routes.workspace(ws.id)} className="flex min-w-0 items-center gap-3 after:absolute after:inset-0">
               <WorkspaceIcon icon={ws.icon} color={ws.color} size="lg" />
