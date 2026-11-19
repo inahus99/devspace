@@ -162,6 +162,7 @@ export default function WorkspacePage() {
               <DropdownMenuItem onSelect={() => capture("note")}>Note</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => capture("snippet")}>Code snippet</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => capture("resource")}>Resource / link</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => openCapture("book", { workspaceId: ws.id })}>Book</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => openCapture("activity", { workspaceId: ws.id })}>Activity</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setCreatingFolder(true)}>Folder</DropdownMenuItem>
               {ws.kind !== "dsa" && !tabs.includes("dsa") ? <DropdownMenuItem onSelect={() => capture("dsa")}>DSA problem</DropdownMenuItem> : null}
