@@ -26,11 +26,13 @@ import { useList, useUpdateFolder, useUpdateWorkspace, useWorkspaceFolders, useW
 import { routes, type WorkspaceTab } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { type CaptureKind, useUi } from "@/stores/ui";
+import { TopicView } from "./TopicView";
 import { useWorkspaceActions } from "./useWorkspaceActions";
 
 const TAB_LABELS: Record<WorkspaceTab, string> = {
-  overview: "Overview",
-  dsa: "DSA problems",
+  contents: "Contents",
+  overview: "Progress",
+  dsa: "Questions",
   lld: "Design exercises",
   notes: "Notes",
   snippets: "Code",
@@ -60,10 +62,11 @@ export default function WorkspacePage() {
     const special: WorkspaceTab[] = [];
     if (ws?.kind === "dsa" || (summary?.dsaProblems ?? 0) > 0) special.push("dsa");
     if (ws?.kind === "lld" || (summary?.lldExercises ?? 0) > 0) special.push("lld");
-    return ["overview", ...special, "notes", "snippets", "resources", "files", "activities"];
+    return ["contents", ...special, "notes", "snippets", "resources", "files", "activities", "overview"];
   }, [ws?.kind, summary?.dsaProblems, summary?.lldExercises]);
 
-  const defaultTab: WorkspaceTab = folderId ? (ws?.kind === "dsa" ? "dsa" : ws?.kind === "lld" ? "lld" : "notes") : ws?.kind === "dsa" ? "dsa" : ws?.kind === "lld" ? "lld" : "overview";
+  // Every workspace and folder opens on its topic page: sub-folders, screenshots, notes, code, links, questions.
+  const defaultTab: WorkspaceTab = "contents";
   const requested = params.get("tab") as WorkspaceTab | null;
   const tab: WorkspaceTab = requested && tabs.includes(requested) ? requested : defaultTab;
 
@@ -93,7 +96,7 @@ export default function WorkspacePage() {
     const next = new URLSearchParams(params);
     if (fid) next.set("folder", fid);
     else next.delete("folder");
-    if (tab === "overview" && fid) next.set("tab", ws.kind === "dsa" ? "dsa" : ws.kind === "lld" ? "lld" : "notes");
+    if (tab === "overview") next.delete("tab");
     setParams(next);
   };
   const capture = (kind: CaptureKind) => openCapture(kind, { workspaceId: ws.id, folderId: folder?.id ?? null });
@@ -134,15 +137,16 @@ export default function WorkspacePage() {
         <div className="flex min-w-0 items-start gap-3">
           <WorkspaceIcon icon={ws.icon} color={ws.color} size="lg" />
           <div className="min-w-0">
+            {folder ? <p className="text-2xs font-medium tracking-[0.16em] text-muted-foreground uppercase">{ws.name}</p> : null}
             <h1 className="flex items-center gap-2 truncate text-2xl font-semibold tracking-tight">
-              {ws.name}
+              {folder ? folder.name : ws.name}
               {ws.archivedAt ? (
                 <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-2xs font-normal text-muted-foreground">
                   <Archive className="size-3" /> Archived
                 </span>
               ) : null}
             </h1>
-            <p className="text-sm text-muted-foreground">{ws.description || WORKSPACE_KIND_LABELS[ws.kind]}</p>
+            {!folder ? <p className="text-sm text-muted-foreground">{ws.description || WORKSPACE_KIND_LABELS[ws.kind]}</p> : null}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -197,7 +201,7 @@ export default function WorkspacePage() {
           </button>
         </div>
       ) : null}
-      {folder && subfolders.length > 0 ? (
+      {folder && subfolders.length > 0 && tab !== "contents" ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {subfolders.map((f) => (
             <button key={f.id} type="button" onClick={() => setFolder(f.id)} className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs hover:bg-accent">
@@ -227,7 +231,9 @@ export default function WorkspacePage() {
       </div>
 
       <div className="pt-5" role="tabpanel">
-        {tab === "overview" ? (
+        {tab === "contents" ? (
+          <TopicView workspace={ws} folder={folder} folders={folders} onOpenFolder={(fid) => setFolder(fid)} capture={capture} />
+        ) : tab === "overview" ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -297,7 +303,7 @@ export default function WorkspacePage() {
           <WorkspaceActivities workspaceId={ws.id} />
         )}
       </div>
-      {creatingFolder && tab !== "overview" ? (
+      {creatingFolder && tab !== "overview" && tab !== "contents" ? (
         <div className="fixed right-6 bottom-6 z-40 w-72 rounded-lg border bg-popover p-2 shadow-lg">
           <p className="px-2 pb-1 text-xs text-muted-foreground">New folder in {ws.name}</p>
           <FolderTree workspaceId={ws.id} creatingRoot onCreatedRoot={() => setCreatingFolder(false)} />

@@ -1,4 +1,4 @@
-import { ArrowDownUp, Binary, CalendarClock, CheckCircle2, ExternalLink, Layers, ListTodo, Plus, RotateCcw, Search, Star, Table2, Target } from "lucide-react";
+import { ArrowDownUp, Binary, CalendarClock, ExternalLink, Layers, ListTodo, Plus, Search, Star, Table2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@shared/constants";
 import type { DsaProblem } from "@shared/types";
 import { DifficultyPill, DsaStatusPill } from "@/components/common/Pill";
-import { EmptyState, ErrorState, LoadingRows, Stat } from "@/components/common/states";
+import { EmptyState, ErrorState, LoadingRows } from "@/components/common/states";
 import { TagList } from "@/components/common/fields";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
 import { Button } from "@/components/ui/button";
@@ -114,30 +114,6 @@ export function DsaTracker({ workspaceId, folderId }: { workspaceId?: string; fo
 
   return (
     <div className="space-y-4">
-      {/* Stats strip */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Stat label="Problems" value={stats.total} icon={Binary} />
-        <Stat label="Solved" value={stats.solved} icon={CheckCircle2} hint={stats.total ? `${Math.round((stats.solved / stats.total) * 100)}% of all` : undefined} />
-        <Stat label="Solved this month" value={stats.solvedThisMonth} icon={Target} />
-        <Stat label="Due for revision" value={stats.due} icon={RotateCcw} />
-        <div className="col-span-2 rounded-xl border bg-card shadow-soft px-4 py-3 lg:col-span-1">
-          <div className="text-xs text-muted-foreground">Difficulty mix</div>
-          <div className="mt-2 space-y-1.5">
-            {DSA_DIFFICULTIES.map((d) => (
-              <div key={d} className="flex items-center gap-2 text-2xs">
-                <span className="w-12 text-muted-foreground">{DSA_DIFFICULTY_LABELS[d]}</span>
-                <MiniBar
-                  value={stats.byDifficulty[d]}
-                  total={stats.total}
-                  color={d === "easy" ? "var(--success)" : d === "medium" ? "var(--warning)" : "var(--destructive)"}
-                />
-                <span className="w-5 text-right tabular">{stats.byDifficulty[d]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as View)} variant="outline" size="sm">

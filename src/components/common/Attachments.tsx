@@ -165,6 +165,7 @@ export function AttachmentsPanel({
   emptyHint = "Drop files here, paste a screenshot, or click Upload.",
   className,
   standalone,
+  gallery,
 }: {
   /** Where new uploads go. */
   target: UploadTarget;
@@ -175,6 +176,8 @@ export function AttachmentsPanel({
   className?: string;
   /** Workspace "Files" mode: only standalone files. */
   standalone?: boolean;
+  /** Show images large (one per row, or two side by side) — for reference screenshots. */
+  gallery?: boolean;
 }) {
   const params = { ...(query ?? (target as Record<string, string | undefined>)), standalone: standalone ? "1" : undefined };
   const { data, isLoading } = useAttachments(params);
@@ -292,11 +295,21 @@ export function AttachmentsPanel({
         ) : (
           <div className="space-y-3">
             {images.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              <div className={cn("grid gap-2", gallery ? (images.length > 1 ? "gap-3 md:grid-cols-2" : "") : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4")}>
                 {images.map((a, i) => (
                   <figure key={a.id} className="group relative overflow-hidden rounded-md border bg-muted/40">
-                    <button type="button" onClick={() => setViewer(i)} className="block aspect-video w-full" aria-label={`View ${a.fileName}`}>
-                      <img src={a.url} alt={a.fileName} loading="lazy" className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setViewer(i)}
+                      className={cn("block w-full", gallery ? "bg-muted/30" : "aspect-video")}
+                      aria-label={`View ${a.fileName}`}
+                    >
+                      <img
+                        src={a.url}
+                        alt={a.fileName}
+                        loading="lazy"
+                        className={cn(gallery ? "mx-auto max-h-[560px] w-auto max-w-full object-contain" : "size-full object-cover")}
+                      />
                     </button>
                     <figcaption className="flex items-center justify-between gap-1 px-2 py-1 text-2xs text-muted-foreground">
                       <span className="truncate">{a.label || a.fileName}</span>

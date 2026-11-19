@@ -1,6 +1,6 @@
 import type { SearchResultType } from "@shared/types";
 
-export type WorkspaceTab = "overview" | "notes" | "snippets" | "resources" | "files" | "activities" | "dsa" | "lld";
+export type WorkspaceTab = "contents" | "overview" | "notes" | "snippets" | "resources" | "files" | "activities" | "dsa" | "lld";
 
 export const routes = {
   dashboard: () => "/",
