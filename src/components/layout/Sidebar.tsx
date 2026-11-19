@@ -39,7 +39,7 @@ function NavItem({ to, label, icon: Icon, end, collapsed }: { to: string; label:
       end={end}
       className={({ isActive }) =>
         cn(
-          "flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground",
+          "flex h-[34px] items-center gap-2.5 rounded-lg px-2.5 text-[13px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground",
           isActive && "bg-sidebar-accent font-medium text-primary",
           collapsed && "justify-center px-0",
         )

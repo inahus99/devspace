@@ -56,12 +56,12 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-lg border border-dashed text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed bg-card/50 text-center",
         compact ? "gap-2 px-4 py-8" : "gap-3 px-6 py-16",
         className,
       )}
     >
-      <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <div className="flex size-11 items-center justify-center rounded-xl bg-secondary text-primary ring-1 ring-primary/10">
         <Icon className="size-5" />
       </div>
       <div className="space-y-1">
@@ -97,7 +97,7 @@ export function FullPageSpinner() {
 
 export function ErrorState({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
   return (
-    <div className={cn("flex flex-col items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-10 text-center", className)}>
+    <div className={cn("flex flex-col items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center", className)}>
       <AlertTriangle className="size-5 text-destructive" />
       <div>
         <p className="text-sm font-medium">Couldn't load this</p>

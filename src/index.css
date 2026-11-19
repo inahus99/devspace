@@ -63,6 +63,7 @@
   --heat-4: #2b7a74;
 
   --shadow-soft: 0 1px 2px rgb(38 59 60 / 0.04), 0 4px 16px -6px rgb(38 59 60 / 0.08);
+  --shadow-pop: 0 18px 40px -16px rgb(38 59 60 / 0.22), 0 3px 8px -3px rgb(38 59 60 / 0.10);
 }
 
 .dark {
@@ -112,6 +113,7 @@
   --heat-4: #7cc6bd;
 
   --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.2), 0 6px 18px -8px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 20px 48px -16px rgb(0 0 0 / 0.55), 0 3px 10px -3px rgb(0 0 0 / 0.35);
 }
 
 @theme inline {
@@ -205,6 +207,15 @@
   }
   .shadow-soft {
     box-shadow: var(--shadow-soft);
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .shadow-pop {
+    box-shadow: var(--shadow-pop);
   }
   .tabular {
     font-variant-numeric: tabular-nums;

@@ -208,7 +208,7 @@ export default function WorkspacePage() {
       ) : null}
 
       {/* Tabs */}
-      <div className="mt-5 flex gap-1 overflow-x-auto border-b" role="tablist">
+      <div className="no-scrollbar mt-5 flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl border bg-muted/60 p-1" role="tablist">
         {tabs.map((t) => (
           <button
             key={t}
@@ -217,8 +217,8 @@ export default function WorkspacePage() {
             aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={cn(
-              "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm transition-colors",
-              tab === t ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+              "shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-[color,background-color,box-shadow]",
+              tab === t ? "bg-card font-medium text-foreground shadow-soft" : "text-muted-foreground hover:bg-card/60 hover:text-foreground",
             )}
           >
             {TAB_LABELS[t]}
