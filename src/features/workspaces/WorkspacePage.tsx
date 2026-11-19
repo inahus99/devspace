@@ -316,7 +316,7 @@ function RecentNotes({ workspaceId, onAll }: { workspaceId: string; onAll: () =>
     <Section
       title="Recently edited notes"
       action={
-        <button type="button" onClick={onAll} className="text-xs text-muted-foreground hover:text-foreground">
+        <button type="button" onClick={onAll} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">
           View all
         </button>
       }

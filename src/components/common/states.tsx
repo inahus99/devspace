@@ -20,12 +20,12 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-wrap items-start justify-between gap-3 pb-5", className)}>
+    <div className={cn("flex flex-wrap items-start justify-between gap-3 pb-6", className)}>
       <div className="flex min-w-0 items-start gap-3">
         {icon}
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
-          {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
+          <h1 className="truncate text-[28px] leading-9 font-semibold tracking-tight">{title}</h1>
+          {description ? <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
@@ -131,12 +131,16 @@ export const modKey = isMac ? "⌘" : "Ctrl";
 /** Small labelled stat used on dashboard/analytics. */
 export function Stat({ label, value, hint, icon: Icon }: { label: string; value: ReactNode; hint?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="rounded-xl border bg-card shadow-soft px-4 py-3">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        {Icon ? <Icon className="size-3.5" /> : null}
-        {label}
+    <div className="group/stat rounded-xl border bg-card px-4 py-3.5 shadow-soft transition-colors hover:border-primary/20">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        {Icon ? (
+          <span className="flex size-7 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-primary/10">
+            <Icon className="size-3.5" />
+          </span>
+        ) : null}
       </div>
-      <div className="mt-1 text-2xl font-semibold tracking-tight tabular">{value}</div>
+      <div className="mt-1.5 text-[26px] leading-8 font-semibold tracking-tight tabular">{value}</div>
       {hint ? <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div> : null}
     </div>
   );
@@ -158,8 +162,8 @@ export function Section({
 }) {
   return (
     <section className={cn("rounded-xl border bg-card shadow-soft", className)}>
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
-        <h2 className="text-sm font-medium">{title}</h2>
+      <header className="flex min-h-11 items-center justify-between gap-2 border-b border-border/70 px-4 py-2">
+        <h2 className="text-[13px] font-semibold tracking-tight">{title}</h2>
         {action}
       </header>
       <div className={cn("p-4", bodyClassName)}>{children}</div>

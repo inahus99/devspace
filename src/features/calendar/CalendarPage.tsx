@@ -104,7 +104,7 @@ export default function CalendarPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <WorkspaceSelect value={workspaceId} onChange={setWorkspaceId} allowNone noneLabel="All workspaces" className="h-8 w-44" />
-          <div className="flex items-center rounded-md border">
+          <div className="flex items-center overflow-hidden rounded-lg border bg-card shadow-xs">
             <Button variant="ghost" size="icon" className="size-8 rounded-r-none" onClick={() => step(-1)} aria-label="Previous">
               <ChevronLeft />
             </Button>

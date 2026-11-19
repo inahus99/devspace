@@ -69,11 +69,11 @@ export default function PlannerPage() {
 
       {/* Day navigation + week strip */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-md border">
+        <div className="flex items-center overflow-hidden rounded-lg border bg-card shadow-xs">
           <Button variant="ghost" size="icon" className="size-8 rounded-r-none" onClick={() => shift(-1)} aria-label="Previous day">
             <ChevronLeft />
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 rounded-none border-x px-3" onClick={() => setDate(todayISO())} disabled={isToday}>
+          <Button variant="ghost" size="sm" className="h-8 rounded-none border-x px-3 active:translate-y-0" onClick={() => setDate(todayISO())} disabled={isToday}>
             Today
           </Button>
           <Button variant="ghost" size="icon" className="size-8 rounded-l-none" onClick={() => shift(1)} aria-label="Next day">
@@ -83,7 +83,7 @@ export default function PlannerPage() {
         <Input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className="h-8 w-auto" aria-label="Pick a date" />
       </div>
 
-      <div className="mb-6 grid grid-cols-7 gap-1.5" role="tablist" aria-label="Week">
+      <div className="mb-6 grid grid-cols-7 gap-1.5 rounded-2xl border bg-card p-1.5 shadow-soft" role="tablist" aria-label="Week">
         {weekDays.map((d) => {
           const t = weekTotals.get(d);
           const ratio = t && t.total ? t.completed / t.total : 0;
@@ -96,16 +96,18 @@ export default function PlannerPage() {
               aria-selected={selected}
               onClick={() => setDate(d)}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-md border px-1 py-2 text-xs transition-colors hover:bg-accent",
-                selected ? "border-brand/50 bg-brand-soft" : "border-transparent",
+                "flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-xs transition-[background-color,color,box-shadow]",
+                selected ? "bg-primary text-primary-foreground shadow-soft" : "hover:bg-accent",
               )}
             >
-              <span className="text-muted-foreground">{format(fromISODate(d), "EEE")}</span>
-              <span className={cn("text-sm font-medium tabular", d === todayISO() && "text-brand")}>{format(fromISODate(d), "d")}</span>
-              <span className="h-1 w-8 overflow-hidden rounded-full bg-muted" aria-hidden>
-                <span className="block h-full rounded-full bg-success" style={{ width: `${ratio * 100}%` }} />
+              <span className={cn("text-2xs font-medium tracking-wide uppercase", selected ? "text-primary-foreground/75" : "text-muted-foreground")}>
+                {format(fromISODate(d), "EEE")}
               </span>
-              <span className="text-2xs text-muted-foreground tabular">{t?.total ? `${t.completed}/${t.total}` : "–"}</span>
+              <span className={cn("text-base font-semibold tabular", !selected && d === todayISO() && "text-brand")}>{format(fromISODate(d), "d")}</span>
+              <span className={cn("h-1 w-8 overflow-hidden rounded-full", selected ? "bg-primary-foreground/25" : "bg-muted")} aria-hidden>
+                <span className={cn("block h-full rounded-full", selected ? "bg-primary-foreground" : "bg-success")} style={{ width: `${ratio * 100}%` }} />
+              </span>
+              <span className={cn("text-2xs tabular", selected ? "text-primary-foreground/75" : "text-muted-foreground")}>{t?.total ? `${t.completed}/${t.total}` : "–"}</span>
             </button>
           );
         })}

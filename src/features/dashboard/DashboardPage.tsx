@@ -34,6 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fromISODate, timeAgo, toISODate, todayISO } from "@/lib/dates";
 import { useCreate, useDashboard, useList, useMe, useStats, useWorkspaceMap, useWorkspaces } from "@/lib/queries";
 import { contentHref, routes } from "@/lib/routes";
+import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { useUi } from "@/stores/ui";
 import { MonthHeatmap } from "../analytics/Heatmap";
 import { ActivityItem } from "../planner/ActivityItem";
@@ -94,23 +95,33 @@ export default function DashboardPage() {
 
   return (
     <Page wide>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs text-muted-foreground">{format(fromISODate(today), "EEEE, MMMM d")}</p>
-          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
-            {greeting()}
-            {name ? `, ${name}` : ""}
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={routes.planner()}>
-              <CalendarCheck /> Planner
-            </Link>
-          </Button>
-          <Button size="sm" onClick={() => openCapture("activity", { date: today })}>
-            <Plus /> Plan activity
-          </Button>
+      <header className="relative mb-6 overflow-hidden rounded-2xl border bg-card shadow-soft">
+        {/* Seaside artwork fades in from the right so the greeting sits on a clean surface. */}
+        <img
+          src={DEFAULT_BANNER_URL}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute inset-0 size-full object-cover object-[center_60%] opacity-95 [mask-image:linear-gradient(to_right,transparent_22%,black_72%)] dark:opacity-45"
+        />
+        <div className="relative flex flex-wrap items-end justify-between gap-5 p-6 sm:p-8">
+          <div className="max-w-md">
+            <p className="text-2xs font-medium tracking-[0.18em] text-muted-foreground uppercase">{format(fromISODate(today), "EEEE · MMMM d")}</p>
+            <h1 className="mt-1.5 text-3xl leading-tight font-semibold tracking-tight sm:text-[34px]">
+              {greeting()}
+              {name ? `, ${name}` : ""}
+            </h1>
+            <TodayProgress loading={todayList.isLoading} done={todayDone} total={todayItems.length} />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild className="bg-card/85 backdrop-blur">
+              <Link to={routes.planner()}>
+                <CalendarCheck /> Planner
+              </Link>
+            </Button>
+            <Button onClick={() => openCapture("activity", { date: today })}>
+              <Plus /> Plan activity
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -143,7 +154,7 @@ export default function DashboardPage() {
           <Section
             title="Today's focus"
             action={
-              <Link to={routes.planner()} className="text-xs text-muted-foreground hover:text-foreground">
+              <Link to={routes.planner()} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">
                 Open planner
               </Link>
             }
@@ -173,7 +184,7 @@ export default function DashboardPage() {
               title="Recently added resources"
               bodyClassName="p-1.5"
               action={
-                <Link to={routes.resources()} className="text-xs text-muted-foreground hover:text-foreground">
+                <Link to={routes.resources()} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">
                   Library
                 </Link>
               }
@@ -186,7 +197,7 @@ export default function DashboardPage() {
         <aside className="space-y-6">
           <ActivityMonth weekStartsOn={weekStartsOn} />
 
-          <Section title="Upcoming" bodyClassName="p-1.5" action={<Link to={routes.calendar({ view: "week" })} className="text-xs text-muted-foreground hover:text-foreground">Calendar</Link>}>
+          <Section title="Upcoming" bodyClassName="p-1.5" action={<Link to={routes.calendar({ view: "week" })} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">Calendar</Link>}>
             {upcoming.isLoading ? (
               <LoadingRows rows={2} className="p-2" />
             ) : upcoming.data?.length ? (
@@ -230,7 +241,7 @@ export default function DashboardPage() {
             title="Currently reading"
             bodyClassName="p-1.5"
             action={
-              <Link to={routes.books()} className="text-xs text-muted-foreground hover:text-foreground">
+              <Link to={routes.books()} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">
                 Bookshelf
               </Link>
             }
@@ -268,6 +279,28 @@ export default function DashboardPage() {
         </aside>
       </div>
     </Page>
+  );
+}
+
+function TodayProgress({ loading, done, total }: { loading: boolean; done: number; total: number }) {
+  if (loading) return <Skeleton className="mt-4 h-9 w-64" />;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-sm text-muted-foreground">
+        {total === 0
+          ? "Nothing planned yet. Pick one thing to learn today."
+          : done === total
+            ? `All ${total} planned ${total === 1 ? "activity" : "activities"} done. Nice work.`
+            : `${done} of ${total} planned ${total === 1 ? "activity" : "activities"} done today.`}
+      </p>
+      {total > 0 ? (
+        <div className="flex items-center gap-3">
+          <Progress value={pct} className="h-1.5 w-56" aria-label={`${pct}% of today's plan done`} />
+          <span className="text-xs font-medium text-primary tabular">{pct}%</span>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -350,7 +383,7 @@ function WorkspaceGrid({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium">Workspaces</h2>
+        <h2 className="text-[13px] font-semibold tracking-tight">Workspaces</h2>
         <Button variant="ghost" size="sm" onClick={() => openCapture("workspace")}>
           <Plus /> New
         </Button>
@@ -360,13 +393,13 @@ function WorkspaceGrid({
           const s = byId.get(w.id);
           const pct = s?.progress == null ? null : Math.round(s.progress * 100);
           return (
-            <Link key={w.id} to={routes.workspace(w.id)} className="group rounded-xl border bg-card shadow-soft p-4 transition-colors hover:border-foreground/15">
+            <Link key={w.id} to={routes.workspace(w.id)} className="group rounded-xl border bg-card p-4 shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-pop">
               <div className="flex items-center gap-2.5">
                 <WorkspaceIcon icon={w.icon} color={w.color} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{w.name}</span>
                 <span className="text-xs text-muted-foreground tabular">{pct === null ? "" : `${pct}%`}</span>
               </div>
-              <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted" aria-label={pct === null ? "No progress yet" : `${pct}% progress`}>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" aria-label={pct === null ? "No progress yet" : `${pct}% progress`}>
                 <div className="h-full rounded-full transition-[width]" style={{ width: `${pct ?? 0}%`, backgroundColor: w.color }} />
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-1 text-xs">
