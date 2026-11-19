@@ -1,6 +1,6 @@
 import "./excalidraw-setup";
 import { CaptureUpdateAction, convertToExcalidrawElements, exportToCanvas, getNonDeletedElements } from "@excalidraw/excalidraw";
-import type { BinaryFileData, BinaryFiles, DataURL, ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import type { AppState, BinaryFileData, BinaryFiles, DataURL, ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 /**
  * Notebook pages are Excalidraw frames, stacked top to bottom. Anything drawn inside a frame
@@ -59,8 +59,38 @@ export function addPage(api: ExcalidrawImperativeAPI, opts?: { scroll?: boolean 
     { type: "frame", x, y, width: PAGE_W, height: PAGE_H, name: `Page ${frames.length + 1}`, children: [] },
   ]);
   api.updateScene({ elements: [...all, frame!], captureUpdate: CaptureUpdateAction.IMMEDIATELY });
-  if (opts?.scroll !== false) api.scrollToContent(frame, { fitToViewport: true, viewportZoomFactor: 0.92, animate: true });
+  if (opts?.scroll !== false) fitPageWidth(api, frame as Frame);
   return frame as Frame;
+}
+
+/**
+ * Zooms so a page fills the width of the screen (like a notebook app) and shows its top,
+ * a comfortable size for handwriting; you scroll down the page as you write. Without
+ * pages, it fits the whole drawing instead. Zoom only changes the view, never the PDF.
+ */
+export function fitPageWidth(api: ExcalidrawImperativeAPI, page?: Frame | null, opts?: { keepY?: boolean }) {
+  const f = page ?? currentPage(api);
+  if (!f) {
+    api.scrollToContent(undefined, { fitToViewport: true, viewportZoomFactor: 0.9 });
+    return;
+  }
+  const s = api.getAppState();
+  if (!s.width) return;
+  const zoom = Math.min(Math.max((s.width - 40) / f.width, 0.1), 3);
+  // Screen x = (sceneX + scrollX) * zoom: centre the page, top edge 16px below the toolbar area.
+  const scrollX = (s.width / zoom - f.width) / 2 - f.x;
+  const scrollY = opts?.keepY ? s.scrollY : 72 / zoom - f.y;
+  api.updateScene({ appState: { zoom: { value: zoom as AppState["zoom"]["value"] }, scrollX, scrollY } });
+}
+
+/** Notebook defaults on open: page width fills the screen and the pencil is ready. */
+export function startNotebook(api: ExcalidrawImperativeAPI) {
+  const s = api.getAppState();
+  // Wait until Excalidraw has finished loading the saved scene, which resets the view.
+  if (s.isLoading || !s.width || !pageFrames(api).length) return false;
+  fitPageWidth(api, pageFrames(api)[0]);
+  api.setActiveTool({ type: "freedraw" });
+  return true;
 }
 
 /** The page whose area covers the middle of the screen, or the last page. */
@@ -79,7 +109,8 @@ export function insertImage(api: ExcalidrawImperativeAPI, dataURL: string, natur
   const id = crypto.randomUUID() as BinaryFileData["id"];
   api.addFiles([{ id, dataURL: dataURL as DataURL, mimeType, created: Date.now() }]);
 
-  const page = currentPage(api) ?? addPage(api, { scroll: false });
+  const existing = currentPage(api);
+  const page = existing ?? addPage(api, { scroll: false });
   const margin = 32;
   const scale = Math.min((page.width - margin * 2) / natural.width, (page.height - margin * 2) / natural.height, 1);
   const width = natural.width * scale;
@@ -88,7 +119,7 @@ export function insertImage(api: ExcalidrawImperativeAPI, dataURL: string, natur
     { type: "image", fileId: id, x: page.x + (page.width - width) / 2, y: page.y + margin, width, height, frameId: page.id },
   ]);
   api.updateScene({ elements: [...api.getSceneElements(), img!], captureUpdate: CaptureUpdateAction.IMMEDIATELY });
-  api.scrollToContent(page, { fitToViewport: true, viewportZoomFactor: 0.92, animate: true });
+  if (!existing) fitPageWidth(api, page);
 }
 
 /**

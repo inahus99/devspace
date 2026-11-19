@@ -2,7 +2,7 @@ import "./excalidraw-setup";
 import "@excalidraw/excalidraw/index.css";
 import { Excalidraw, exportToBlob, getNonDeletedElements, MainMenu } from "@excalidraw/excalidraw";
 import type { AppState, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
-import { ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, Star, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, MoveHorizontal, Star, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import { api, ApiError, errorMessage } from "@/lib/api";
 import { useDelete, useDeleteAttachment, useFolders, useItem, useUpdate, useUpload, useWorkspaceMap } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { addPage, exportPdf, pdfFileName, saveBlob } from "./notebook";
+import { addPage, exportPdf, fitPageWidth, pdfFileName, saveBlob, startNotebook } from "./notebook";
 
 export default function DiagramPage() {
   const { id } = useParams();
@@ -233,6 +233,16 @@ export function DiagramEditor({
           <Button variant="ghost" size="sm" className="h-8" onClick={() => draw.current && addPage(draw.current)} title="Add an A4 page below the last one">
             <FilePlus2 /> Page
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => draw.current && fitPageWidth(draw.current)}
+            aria-label="Fit page to width"
+            title="Fit page to width (writing size)"
+          >
+            <MoveHorizontal />
+          </Button>
           {pdfMenu}
           {embedded ? (
             <Button variant="ghost" size="icon" className="size-8" asChild>
@@ -267,12 +277,31 @@ export function DiagramEditor({
           excalidrawAPI={(a) => {
             draw.current = a;
             onReady?.(a);
-            // A new notebook opens on its first blank page.
-            if ((embedded || params.get("notebook") === "1") && !diagram.scene.elements.length && !seeded.current) {
-              seeded.current = true;
-              if (params.has("notebook")) setParams((p) => (p.delete("notebook"), p), { replace: true });
-              setTimeout(() => addPage(a), 0);
-            }
+            if (import.meta.env.DEV) (window as unknown as { __excalidraw?: ExcalidrawImperativeAPI }).__excalidraw = a;
+            if (seeded.current) return;
+            seeded.current = true;
+            // Excalidraw may hand over a new API instance (e.g. remounts in development) and
+            // loads the saved scene a moment later, so act on the latest instance once ready.
+            const fresh = (embedded || params.get("notebook") === "1") && !diagram.scene.elements.length;
+            if (fresh && params.has("notebook")) setParams((p) => (p.delete("notebook"), p), { replace: true });
+            let tries = 0;
+            const attempt = () => {
+              const cur = draw.current;
+              const ready = cur && !cur.getAppState().isLoading && cur.getAppState().width > 0;
+              if (ready && fresh) {
+                // A new notebook opens on its first blank page, pencil ready.
+                if (!cur.getSceneElements().length) addPage(cur);
+                cur.setActiveTool({ type: "freedraw" });
+                return;
+              }
+              // An existing notebook opens at writing size with the pencil ready.
+              if (ready) {
+                startNotebook(cur); // no-op for drawings without pages
+                return;
+              }
+              if (++tries < 50) setTimeout(attempt, 100);
+            };
+            setTimeout(attempt, 0);
           }}
           initialData={initialData}
           theme={dark ? "dark" : "light"}
