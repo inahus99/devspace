@@ -411,17 +411,30 @@ function TimeGrid({
   const [nowMin, setNowMin] = useState(() => new Date().getHours() * 60 + new Date().getMinutes());
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_PX;
     const t = setInterval(() => setNowMin(new Date().getHours() * 60 + new Date().getMinutes()), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  // Open the grid on the day's first timed activity (or 7 AM), so nothing hides below the fold.
+  const firstStart = useMemo(() => {
+    let min = Infinity;
+    for (const d of days) for (const a of byDate.get(d) ?? []) if (a.startTime) min = Math.min(min, timeToMinutes(a.startTime));
+    return min;
+  }, [days, byDate]);
+  const targetMin = Number.isFinite(firstStart) ? Math.max(0, Math.min(7 * 60, firstStart - 30)) : 7 * 60;
+  const daysKey = days.join(",");
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = (targetMin / 60) * HOUR_PX;
+  }, [daysKey, targetMin]);
 
   const cols = `56px repeat(${days.length}, minmax(0, 1fr))`;
 
   return (
     <div className="flex min-h-[560px] flex-1 flex-col overflow-hidden rounded-xl border bg-card shadow-soft">
       {/* Header */}
-      <div className="grid border-b bg-muted/40" style={{ gridTemplateColumns: cols }}>
+      <div className="grid overflow-y-hidden border-b bg-muted/40 [scrollbar-gutter:stable]" style={{ gridTemplateColumns: cols }}>
         <div />
         {days.map((d) => {
           const t = dayTotals(byDate.get(d) ?? []);
@@ -440,7 +453,7 @@ function TimeGrid({
         })}
       </div>
       {/* All-day (untimed) */}
-      <div className="grid border-b" style={{ gridTemplateColumns: cols }}>
+      <div className="grid overflow-y-hidden border-b [scrollbar-gutter:stable]" style={{ gridTemplateColumns: cols }}>
         <div className="px-1.5 py-1 text-right text-2xs text-muted-foreground">All day</div>
         {days.map((d) => (
           <div
@@ -459,7 +472,7 @@ function TimeGrid({
         ))}
       </div>
       {/* Hours */}
-      <div ref={scrollRef} className="relative flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="relative flex-1 overflow-y-auto [scrollbar-gutter:stable]">
         <div className="grid" style={{ gridTemplateColumns: cols, height: 24 * HOUR_PX }}>
           <div className="relative">
             {Array.from({ length: 24 }, (_, h) => (
