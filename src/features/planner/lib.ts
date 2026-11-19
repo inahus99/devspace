@@ -1,3 +1,4 @@
+import { formatTime12, formatTimeRange12 } from "@shared/time";
 import { BookOpen, Boxes, Code2, FileText, Link2, type LucideIcon, Target } from "lucide-react";
 import type { ActivityLinkType, ActivityWithLink } from "@shared/types";
 import type { EntityName } from "@/lib/queries";
@@ -45,7 +46,7 @@ export function sortActivities<T extends { startTime: string | null; createdAt: 
 }
 
 export function timeLabel(a: { startTime: string | null; endTime: string | null }): string {
-  if (a.startTime && a.endTime) return `${a.startTime.slice(0, 5)}–${a.endTime.slice(0, 5)}`;
-  if (a.startTime) return a.startTime.slice(0, 5);
+  if (a.startTime && a.endTime) return formatTimeRange12(a.startTime, a.endTime);
+  if (a.startTime) return formatTime12(a.startTime);
   return "";
 }

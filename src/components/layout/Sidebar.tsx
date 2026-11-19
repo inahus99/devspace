@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookOpen, CalendarCheck2, CalendarDays, ChevronRight, ChevronsLeft, ChevronsRight, Layers, LayoutDashboard, Library,
+  BarChart3, BookOpen, CalendarDays, ChevronRight, ChevronsLeft, ChevronsRight, Layers, LayoutDashboard, Library,
   LogOut, Moon, MoreHorizontal, Plus, Search, Settings, Sun,
 } from "lucide-react";
 import { type DragEvent, type ReactNode, useState } from "react";
@@ -24,7 +24,6 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/workspaces", label: "My Workspaces", icon: Layers, end: true },
   { to: "/calendar", label: "Master Calendar", icon: CalendarDays },
-  { to: "/planner", label: "Daily Planner", icon: CalendarCheck2 },
   { to: "/resources", label: "Resource Library", icon: Library },
   { to: "/books", label: "Bookshelf", icon: BookOpen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },

@@ -20,7 +20,7 @@ import {
   Target,
   Timer,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { RESOURCE_TYPE_LABELS } from "@shared/constants";
 import type { DashboardResponse, Workspace } from "@shared/types";
@@ -28,17 +28,17 @@ import { addDaysISO, formatMinutes } from "@shared/time";
 import { EmptyState, ErrorState, LoadingRows, Page, Section, Stat } from "@/components/common/states";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fromISODate, timeAgo, toISODate, todayISO } from "@/lib/dates";
-import { useCreate, useDashboard, useList, useMe, useStats, useWorkspaceMap, useWorkspaces } from "@/lib/queries";
+import { useDashboard, useList, useMe, useStats, useWorkspaceMap, useWorkspaces } from "@/lib/queries";
 import { contentHref, routes } from "@/lib/routes";
 import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { useUi } from "@/stores/ui";
 import { MonthHeatmap } from "../analytics/Heatmap";
 import { ActivityItem } from "../planner/ActivityItem";
 import { sortActivities } from "../planner/lib";
+import { QuickAdd } from "../planner/QuickAdd";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -115,7 +115,7 @@ export default function DashboardPage() {
           <div className="flex gap-2">
             <Button variant="outline" asChild className="bg-card/85 backdrop-blur">
               <Link to={routes.planner()}>
-                <CalendarCheck /> Planner
+                <CalendarCheck /> Today's plan
               </Link>
             </Button>
             <Button onClick={() => openCapture("activity", { date: today })}>
@@ -155,12 +155,12 @@ export default function DashboardPage() {
             title="Today's focus"
             action={
               <Link to={routes.planner()} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">
-                Open planner
+                Day view
               </Link>
             }
             bodyClassName="p-2"
           >
-            <QuickAdd date={today} />
+            <QuickAdd date={today} inline className="px-1 pt-1" />
             {todayList.isLoading ? (
               <LoadingRows rows={3} className="p-2" />
             ) : todayItems.length ? (
@@ -301,29 +301,6 @@ function TodayProgress({ loading, done, total }: { loading: boolean; done: numbe
         </div>
       ) : null}
     </div>
-  );
-}
-
-function QuickAdd({ date }: { date: string }) {
-  const [title, setTitle] = useState("");
-  const create = useCreate("activities");
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const t = title.trim();
-    if (t) create.mutate({ title: t, date }, { onSuccess: () => setTitle("") });
-  };
-  return (
-    <form onSubmit={submit} className="relative px-1 pt-1">
-      <Plus className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Add a task for today and press Enter"
-        className="border-transparent bg-muted/50 pl-9 shadow-none"
-        aria-label="Quick add a task for today"
-        disabled={create.isPending}
-      />
-    </form>
   );
 }
 

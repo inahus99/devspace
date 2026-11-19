@@ -13,7 +13,7 @@ import { Check, ChevronLeft, ChevronRight, Clock, ExternalLink, Pencil, Plus, Ti
 import { type MouseEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { ActivityWithLink, Workspace } from "@shared/types";
-import { dayTotals, formatMinutes, intervalMinutes, timeToMinutes, totalsByDate } from "@shared/time";
+import { dayTotals, formatMinutes, formatTime12, intervalMinutes, timeToMinutes, totalsByDate } from "@shared/time";
 import { WorkspaceSelect } from "@/components/common/fields";
 import { ErrorState, Page } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatDay, fromISODate, relativeDay, toISODate, todayISO } from "@/lib/dates";
 import { useList, useMe, useWorkspaceMap } from "@/lib/queries";
-import { contentHref, routes } from "@/lib/routes";
+import { contentHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 import { ActivityDialog } from "../planner/ActivityDialog";
 import { ActivityItem, CompleteToggle, useToggleActivity } from "../planner/ActivityItem";
 import { linkMeta, sortActivities, timeLabel } from "../planner/lib";
+import { QuickAdd } from "../planner/QuickAdd";
 
 type View = "month" | "week" | "day";
 const HOUR_PX = 44;
@@ -263,7 +264,7 @@ function ActivityChip({ activity }: { activity: ActivityWithLink }) {
         ) : (
           <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
         )}
-        {activity.startTime ? <span className="shrink-0 tabular text-muted-foreground">{activity.startTime.slice(0, 5)}</span> : null}
+        {activity.startTime ? <span className="shrink-0 tabular text-muted-foreground">{formatTime12(activity.startTime)}</span> : null}
         <span className={cn("truncate", done && "line-through decoration-muted-foreground/50")}>{activity.title}</span>
       </button>
     </ActivityPopover>
@@ -463,7 +464,7 @@ function TimeGrid({
           <div className="relative">
             {Array.from({ length: 24 }, (_, h) => (
               <div key={h} className="absolute right-1.5 -translate-y-1/2 text-2xs text-muted-foreground tabular" style={{ top: h * HOUR_PX }}>
-                {h === 0 ? "" : `${String(h).padStart(2, "0")}:00`}
+                {h === 0 ? "" : formatTime12(`${h}:00`)}
               </div>
             ))}
           </div>
@@ -536,6 +537,7 @@ function DayView({ date, items }: { date: string; items: ActivityWithLink[] }) {
           <MiniStat label="Planned" value={formatMinutes(t.plannedMinutes)} icon={<Clock className="size-3" />} />
           <MiniStat label="Actual" value={formatMinutes(t.actualMinutes)} icon={<Timer className="size-3" />} />
         </div>
+        <QuickAdd key={date} date={date} />
         <div className="rounded-xl border bg-card shadow-soft p-1.5">
           {items.length ? (
             items.map((a) => <ActivityItem key={a.id} activity={a} />)
@@ -543,14 +545,9 @@ function DayView({ date, items }: { date: string; items: ActivityWithLink[] }) {
             <p className="px-2 py-6 text-center text-sm text-muted-foreground">Nothing scheduled.</p>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" className="flex-1" onClick={() => openCapture("activity", { date })}>
-            <Plus /> Add activity
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link to={routes.planner(date)}>Open in planner</Link>
-          </Button>
-        </div>
+        <Button size="sm" variant="outline" className="w-full" onClick={() => openCapture("activity", { date })}>
+          <Plus /> Add with times, links & notes
+        </Button>
       </div>
     </div>
   );

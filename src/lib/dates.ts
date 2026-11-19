@@ -34,7 +34,7 @@ export function timeAgo(iso: string): string {
   return `${formatDistanceToNowStrict(parseISO(iso))} ago`;
 }
 
-export function formatTimestamp(iso: string, pattern = "MMM d, yyyy · HH:mm"): string {
+export function formatTimestamp(iso: string, pattern = "MMM d, yyyy · h:mm a"): string {
   return format(parseISO(iso), pattern);
 }
 

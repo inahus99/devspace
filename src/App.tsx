@@ -21,7 +21,6 @@ const LldExercisePage = lazy(() => import("@/features/lld/LldExercisePage"));
 const ResourceLibraryPage = lazy(() => import("@/features/resources/ResourceLibraryPage"));
 const BookshelfPage = lazy(() => import("@/features/books/BookshelfPage"));
 const BookPage = lazy(() => import("@/features/books/BookPage"));
-const PlannerPage = lazy(() => import("@/features/planner/PlannerPage"));
 const CalendarPage = lazy(() => import("@/features/calendar/CalendarPage"));
 const AnalyticsPage = lazy(() => import("@/features/analytics/AnalyticsPage"));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage"));
@@ -75,7 +74,8 @@ const router = createBrowserRouter([
           { path: "resources", element: <ResourceLibraryPage /> },
           { path: "books", element: <BookshelfPage /> },
           { path: "books/:id", element: <BookPage /> },
-          { path: "planner", element: <PlannerPage /> },
+          // The daily planner was folded into the calendar's Day view; keep old links working.
+          { path: "planner", element: <PlannerRedirect /> },
           { path: "calendar", element: <CalendarPage /> },
           { path: "analytics", element: <AnalyticsPage /> },
           { path: "settings", element: <SettingsPage /> },
@@ -88,4 +88,10 @@ const router = createBrowserRouter([
 
 export function App() {
   return <RouterProvider router={router} />;
+}
+
+function PlannerRedirect() {
+  const { search } = useLocation();
+  const date = new URLSearchParams(search).get("date");
+  return <Navigate to={date ? `/calendar?view=day&date=${date}` : "/calendar?view=day"} replace />;
 }

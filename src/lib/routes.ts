@@ -19,7 +19,8 @@ export const routes = {
   book: (id: string) => `/books/${id}`,
   resources: (opts?: { highlight?: string }) => (opts?.highlight ? `/resources?highlight=${opts.highlight}` : "/resources"),
   books: () => "/books",
-  planner: (date?: string) => (date ? `/planner?date=${date}` : "/planner"),
+  /** The daily plan lives in the calendar's Day view. */
+  planner: (date?: string) => (date ? `/calendar?view=day&date=${date}` : "/calendar?view=day"),
   calendar: (opts?: { view?: "month" | "week" | "day"; date?: string }) => {
     const sp = new URLSearchParams();
     if (opts?.view) sp.set("view", opts.view);

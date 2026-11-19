@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookOpen, Boxes, CalendarCheck2, CalendarDays, CalendarPlus, Code2, FileText, Folder, Layers, LayoutDashboard,
+  BarChart3, BookOpen, Boxes, CalendarDays, CalendarPlus, Code2, FileText, Folder, Layers, LayoutDashboard,
   Library, Link2, ListChecks, Moon, Plus, Settings, Binary,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -48,7 +48,6 @@ const NAV = [
   { to: routes.dashboard(), label: "Dashboard", icon: LayoutDashboard },
   { to: routes.workspaces(), label: "My Workspaces", icon: Layers },
   { to: routes.calendar(), label: "Master Calendar", icon: CalendarDays },
-  { to: routes.planner(), label: "Daily Planner", icon: CalendarCheck2 },
   { to: routes.resources(), label: "Resource Library", icon: Library },
   { to: routes.books(), label: "Bookshelf", icon: BookOpen },
   { to: routes.analytics(), label: "Analytics", icon: BarChart3 },

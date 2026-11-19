@@ -162,3 +162,19 @@ export function formatMinutes(min: number): string {
   const r = m % 60;
   return r ? `${h}h ${r}m` : `${h}h`;
 }
+
+/** "13:05" → "1:05 PM"; "09:00" → "9 AM". */
+export function formatTime12(hhmm: string): string {
+  const [h, m] = hhmm.slice(0, 5).split(":").map(Number);
+  const suffix = h < 12 ? "AM" : "PM";
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return m ? `${hour}:${String(m).padStart(2, "0")} ${suffix}` : `${hour} ${suffix}`;
+}
+
+/** "09:00"–"10:30" → "9–10:30 AM"; "11:00"–"13:00" → "11 AM–1 PM". */
+export function formatTimeRange12(start: string, end: string): string {
+  const a = formatTime12(start);
+  const b = formatTime12(end);
+  const [aTime, aSuffix] = a.split(" ");
+  return aSuffix === b.split(" ")[1] ? `${aTime}–${b}` : `${a}–${b}`;
+}
