@@ -19,6 +19,8 @@ import {
   resourceCreateSchema,
   resourceUpdateSchema,
   snippetCreateSchema,
+  diagramCreateSchema,
+  diagramUpdateSchema,
   snippetUpdateSchema,
 } from "../../shared/schemas.ts";
 import { addDaysISO } from "../../shared/time.ts";
@@ -29,7 +31,7 @@ import { localToday, notFound, param, parse, qs, uid } from "../lib/http.ts";
 import { verifyRefs } from "../lib/refs.ts";
 import { scheduleDrain } from "../storage.ts";
 
-const { notes, codeSnippets, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights, readingLogs } =
+const { notes, codeSnippets, diagrams, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights, readingLogs } =
   schema;
 
 // ---------------------------------------------------------------------------
@@ -57,6 +59,31 @@ export const notesRouter = crudRouter({
     if (!existing && !values.title) values.title = "Untitled";
     if (values.title === "") values.title = "Untitled";
     return values;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Excalidraw diagrams
+// ---------------------------------------------------------------------------
+
+export const diagramsRouter = crudRouter({
+  table: diagrams,
+  createSchema: diagramCreateSchema,
+  updateSchema: diagramUpdateSchema,
+  searchColumns: [diagrams.title],
+  sortable: { updated: diagrams.updatedAt, created: diagrams.createdAt, title: diagrams.title },
+  defaultSort: "updated",
+  // Lists carry the thumbnail but not the (possibly image-heavy) scene.
+  listColumns: {
+    id: diagrams.id,
+    userId: diagrams.userId,
+    workspaceId: diagrams.workspaceId,
+    folderId: diagrams.folderId,
+    title: diagrams.title,
+    preview: diagrams.preview,
+    isFavorite: diagrams.isFavorite,
+    createdAt: diagrams.createdAt,
+    updatedAt: diagrams.updatedAt,
   },
 });
 

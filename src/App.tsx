@@ -16,6 +16,7 @@ const WorkspacesPage = lazy(() => import("@/features/workspaces/WorkspacesPage")
 const WorkspacePage = lazy(() => import("@/features/workspaces/WorkspacePage"));
 const NotePage = lazy(() => import("@/features/notes/NotePage"));
 const SnippetPage = lazy(() => import("@/features/snippets/SnippetPage"));
+const DiagramPage = lazy(() => import("@/features/diagrams/DiagramPage"));
 const DsaProblemPage = lazy(() => import("@/features/dsa/DsaProblemPage"));
 const LldExercisePage = lazy(() => import("@/features/lld/LldExercisePage"));
 const ResourceLibraryPage = lazy(() => import("@/features/resources/ResourceLibraryPage"));
@@ -69,6 +70,7 @@ const router = createBrowserRouter([
           { path: "w/:id", element: <WorkspacePage /> },
           { path: "notes/:id", element: <NotePage /> },
           { path: "snippets/:id", element: <SnippetPage /> },
+          { path: "diagrams/:id", element: <DiagramPage /> },
           { path: "dsa/:id", element: <DsaProblemPage /> },
           { path: "lld/:id", element: <LldExercisePage /> },
           { path: "resources", element: <ResourceLibraryPage /> },

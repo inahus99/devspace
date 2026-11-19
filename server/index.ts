@@ -12,7 +12,7 @@ import { env, isProd } from "./env.ts";
 import { errorHandler, HttpError } from "./lib/http.ts";
 import { activitiesRouter } from "./routes/activities.ts";
 import { attachmentsRouter, filesRouter } from "./routes/attachments.ts";
-import { booksRouter, dsaRouter, lldRouter, notesRouter, resourcesRouter, snippetsRouter } from "./routes/content.ts";
+import { booksRouter, diagramsRouter, dsaRouter, lldRouter, notesRouter, resourcesRouter, snippetsRouter } from "./routes/content.ts";
 import { exportRouter } from "./routes/export.ts";
 import { insightsRouter, searchRouter, tagsRouter } from "./routes/insights.ts";
 import { foldersRouter, workspacesRouter } from "./routes/workspaces.ts";
@@ -47,6 +47,8 @@ app.use(
 );
 app.use(compression());
 app.use(cookieParser());
+// Excalidraw scenes embed pasted images, so diagrams get a larger body limit than everything else.
+app.use("/api/diagrams", express.json({ limit: "40mb" }));
 app.use(express.json({ limit: "8mb" }));
 
 app.get("/api/health", async (_req, res) => {
@@ -63,6 +65,7 @@ api.use("/workspaces", workspacesRouter);
 api.use("/folders", foldersRouter);
 api.use("/notes", notesRouter);
 api.use("/snippets", snippetsRouter);
+api.use("/diagrams", diagramsRouter);
 api.use("/resources", resourcesRouter);
 api.use("/dsa", dsaRouter);
 api.use("/lld", lldRouter);

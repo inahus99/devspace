@@ -290,6 +290,36 @@ export const lldExercises = pgTable(
   ],
 );
 
+/** An Excalidraw drawing. `scene` is the editor's own JSON (elements, appState subset, embedded files). */
+export interface DiagramScene {
+  elements: unknown[];
+  appState?: Record<string, unknown>;
+  files?: Record<string, unknown>;
+}
+
+export const diagrams = pgTable(
+  "diagrams",
+  {
+    id: id(),
+    userId: ownerId(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    folderId: uuid("folder_id").references(() => folders.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    scene: jsonb("scene").$type<DiagramScene>().notNull().default({ elements: [] }),
+    /** Small WebP data URL rendered from the scene, for cards and lists. */
+    preview: text("preview").notNull().default(""),
+    isFavorite: boolean("is_favorite").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("diagrams_user_updated_idx").on(t.userId, t.updatedAt),
+    index("diagrams_workspace_folder_idx").on(t.workspaceId, t.folderId),
+  ],
+);
+
 export const resources = pgTable(
   "resources",
   {
@@ -516,6 +546,7 @@ export type Workspace = typeof workspaces.$inferSelect;
 export type Folder = typeof folders.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type CodeSnippet = typeof codeSnippets.$inferSelect;
+export type Diagram = typeof diagrams.$inferSelect;
 export type Resource = typeof resources.$inferSelect;
 export type DsaProblem = typeof dsaProblems.$inferSelect;
 export type DsaSolution = typeof dsaSolutions.$inferSelect;

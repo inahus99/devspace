@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type {
   ActivityInput,
   BookInput,
+  DiagramInput,
   DsaProblemInput,
   DsaSolutionInput,
   LldInput,
@@ -18,6 +19,8 @@ import type {
   BookHighlight,
   CodeSnippet,
   DashboardResponse,
+  Diagram,
+  DiagramSummary,
   DsaProblem,
   DsaSolution,
   Folder,
@@ -45,6 +48,7 @@ type Params = Record<string, string | number | boolean | undefined | null>;
 export interface Entities {
   notes: { list: NoteSummary; item: Note; input: NoteInput };
   snippets: { list: CodeSnippet; item: CodeSnippet; input: SnippetInput };
+  diagrams: { list: DiagramSummary; item: Diagram; input: DiagramInput };
   resources: { list: Resource; item: Resource; input: ResourceInput };
   dsa: { list: DsaProblem; item: DsaProblem; input: DsaProblemInput };
   lld: { list: LldExercise; item: LldExercise; input: LldInput };
@@ -56,6 +60,7 @@ export type EntityName = keyof Entities;
 const PATHS: Record<EntityName, string> = {
   notes: "/notes",
   snippets: "/snippets",
+  diagrams: "/diagrams",
   resources: "/resources",
   dsa: "/dsa/problems",
   lld: "/lld",

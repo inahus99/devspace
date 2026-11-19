@@ -14,6 +14,7 @@ export const routes = {
   },
   note: (id: string) => `/notes/${id}`,
   snippet: (id: string) => `/snippets/${id}`,
+  diagram: (id: string) => `/diagrams/${id}`,
   dsa: (id: string) => `/dsa/${id}`,
   lld: (id: string) => `/lld/${id}`,
   book: (id: string) => `/books/${id}`,

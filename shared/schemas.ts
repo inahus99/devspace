@@ -138,6 +138,26 @@ export const snippetCreateSchema = z.object({
 });
 export const snippetUpdateSchema = snippetCreateSchema.partial();
 
+// Excalidraw scenes are opaque editor JSON; only the outer shape is checked here.
+const zDiagramScene = z.object({
+  elements: z.array(z.unknown()).max(20_000),
+  appState: z.record(z.string(), z.unknown()).optional(),
+  files: z.record(z.string(), z.unknown()).optional(),
+});
+export const diagramCreateSchema = z.object({
+  workspaceId: zId,
+  folderId: zOptId,
+  title: z.string().trim().min(1, "Title is required").max(300),
+  scene: zDiagramScene.optional(),
+  preview: z
+    .string()
+    .max(1_500_000)
+    .regex(/^(data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+/=]+)?$/, "Preview must be an image data URL")
+    .optional(),
+  isFavorite: z.boolean().optional(),
+});
+export const diagramUpdateSchema = diagramCreateSchema.partial();
+
 export const resourceCreateSchema = z.object({
   workspaceId: zOptId,
   folderId: zOptId,
@@ -291,6 +311,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type WorkspaceInput = z.infer<typeof workspaceCreateSchema>;
 export type NoteInput = z.infer<typeof noteCreateSchema>;
 export type SnippetInput = z.infer<typeof snippetCreateSchema>;
+export type DiagramInput = z.infer<typeof diagramCreateSchema>;
 export type ResourceInput = z.infer<typeof resourceCreateSchema>;
 export type DsaProblemInput = z.infer<typeof dsaProblemCreateSchema>;
 export type DsaSolutionInput = z.infer<typeof dsaSolutionCreateSchema>;

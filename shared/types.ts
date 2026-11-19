@@ -16,6 +16,8 @@ export type NoteSummary = Omit<Note, "contentJson" | "contentHtml" | "contentMar
   excerpt: string;
 };
 export type CodeSnippet = Tagged<S.CodeSnippet>;
+export type Diagram = Serialized<S.Diagram>;
+export type DiagramSummary = Omit<Diagram, "scene">;
 export type Resource = Tagged<S.Resource>;
 export type DsaProblem = Tagged<S.DsaProblem>;
 export type DsaSolution = Serialized<S.DsaSolution>;

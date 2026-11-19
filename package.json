@@ -8,10 +8,10 @@
   },
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:client": "vite",
+    "dev:client": "node scripts/copy-excalidraw-fonts.mjs && vite",
     "dev:server": "tsx watch --env-file-if-exists=.env server/index.ts",
     "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build",
+    "build:client": "node scripts/copy-excalidraw-fonts.mjs && vite build",
     "build:server": "esbuild server/index.ts server/migrate.ts server/reset-password.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outdir=dist-server --out-extension:.js=.js",
     "start": "node dist-server/migrate.js && node dist-server/index.js",
     "reset-password": "node dist-server/reset-password.js",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1171.0",
+    "@excalidraw/excalidraw": "0.18.1",
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",

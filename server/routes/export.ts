@@ -10,7 +10,7 @@ import { attachTags } from "../lib/tags.ts";
 import { storage } from "../storage.ts";
 
 const {
-  users, workspaces, folders, notes, codeSnippets, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights,
+  users, workspaces, folders, notes, codeSnippets, diagrams, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights,
   readingLogs, attachments, activities, tags, contentTags,
 } = schema;
 
@@ -126,12 +126,13 @@ function folderPaths(rows: (typeof folders.$inferSelect)[]): Map<string, string>
 async function loadAll(userId: string) {
   const own = <T extends { userId: unknown }>(t: T) => eq((t as unknown as typeof notes).userId, userId);
   const [
-    ws, fs, ns, sn, rs, dp, ds, ll, bk, hl, rl, at, ac, tg, ct, me,
+    ws, fs, ns, sn, dg, rs, dp, ds, ll, bk, hl, rl, at, ac, tg, ct, me,
   ] = await Promise.all([
     db.select().from(workspaces).where(own(workspaces)).orderBy(asc(workspaces.position)),
     db.select().from(folders).where(own(folders)).orderBy(asc(folders.position)),
     db.select().from(notes).where(own(notes)),
     db.select().from(codeSnippets).where(own(codeSnippets)),
+    db.select().from(diagrams).where(own(diagrams)),
     db.select().from(resources).where(own(resources)),
     db.select().from(dsaProblems).where(own(dsaProblems)),
     db.select().from(dsaSolutions).where(own(dsaSolutions)).orderBy(asc(dsaSolutions.position)),
@@ -148,7 +149,7 @@ async function loadAll(userId: string) {
   ]);
   return {
     profile: me[0],
-    workspaces: ws, folders: fs, notes: ns, codeSnippets: sn, resources: rs, dsaProblems: dp, dsaSolutions: ds,
+    workspaces: ws, folders: fs, notes: ns, codeSnippets: sn, diagrams: dg, resources: rs, dsaProblems: dp, dsaSolutions: ds,
     lldExercises: ll, books: bk, bookHighlights: hl, readingLogs: rl, attachments: at, activities: ac, tags: tg, contentTags: ct,
   };
 }
@@ -217,6 +218,12 @@ exportRouter.get("/archive.zip", async (req, res) => {
   for (const s of data.codeSnippets) {
     const dir = ["snippets", wsName.get(s.workspaceId) ?? "workspace", s.folderId ? paths.get(s.folderId) : ""].filter(Boolean).join("/");
     archive.append(s.code, { name: uniquePath(used, `${dir}/${sanitizeName(s.title)}`, `.${languageExt(s.language)}`) });
+  }
+  // Diagrams as standard .excalidraw files, which excalidraw.com can open directly.
+  for (const d of data.diagrams) {
+    const dir = ["diagrams", wsName.get(d.workspaceId) ?? "workspace", d.folderId ? paths.get(d.folderId) : ""].filter(Boolean).join("/");
+    const file = { type: "excalidraw", version: 2, source: "devspace", elements: d.scene.elements ?? [], appState: d.scene.appState ?? {}, files: d.scene.files ?? {} };
+    archive.append(JSON.stringify(file), { name: uniquePath(used, `${dir}/${sanitizeName(d.title)}`, ".excalidraw") });
   }
   for (const sol of data.dsaSolutions) {
     const p = data.dsaProblems.find((x) => x.id === sol.problemId);
