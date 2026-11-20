@@ -23,7 +23,7 @@ import {
 import { type ReactNode, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { RESOURCE_TYPE_LABELS } from "@shared/constants";
-import type { DashboardResponse, Workspace } from "@shared/types";
+import type { DashboardResponse, Memo, Workspace } from "@shared/types";
 import { addDaysISO, formatMinutes } from "@shared/time";
 import { EmptyState, ErrorState, LoadingRows, Page, Section, Stat } from "@/components/common/states";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
@@ -36,6 +36,7 @@ import { contentHref, routes } from "@/lib/routes";
 import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { useUi } from "@/stores/ui";
 import { MonthHeatmap } from "../analytics/Heatmap";
+import { WorkspaceMemos } from "./WorkspaceMemos";
 import { ActivityItem } from "../planner/ActivityItem";
 import { sortActivities } from "../planner/lib";
 import { QuickAdd } from "../planner/QuickAdd";
@@ -355,6 +356,12 @@ function WorkspaceGrid({
 }) {
   const openCapture = useUi((s) => s.openCapture);
   const byId = new Map((summaries ?? []).map((s) => [s.workspaceId, s]));
+  const memos = useList("memos");
+  const memosByWorkspace = useMemo(() => {
+    const map = new Map<string, Memo[]>();
+    for (const m of memos.data ?? []) map.set(m.workspaceId, [...(map.get(m.workspaceId) ?? []), m]);
+    return map;
+  }, [memos.data]);
   if (loading) return <LoadingRows rows={2} />;
   if (!workspaces.length) return null;
   return (
@@ -370,7 +377,8 @@ function WorkspaceGrid({
           const s = byId.get(w.id);
           const pct = s?.progress == null ? null : Math.round(s.progress * 100);
           return (
-            <Link key={w.id} to={routes.workspace(w.id)} className="group rounded-xl border bg-card p-4 shadow-soft transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-pop">
+            <div key={w.id} className="rounded-xl border bg-card p-4 shadow-soft transition-[border-color,box-shadow] hover:border-primary/25 hover:shadow-pop">
+              <Link to={routes.workspace(w.id)} className="group block">
               <div className="flex items-center gap-2.5">
                 <WorkspaceIcon icon={w.icon} color={w.color} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{w.name}</span>
@@ -387,7 +395,9 @@ function WorkspaceGrid({
                 {s?.lastActivityAt ? `Active ${timeAgo(s.lastActivityAt)}` : "No activity yet"}
                 {s ? ` · ${summaryLine(s)}` : ""}
               </p>
-            </Link>
+              </Link>
+              <WorkspaceMemos workspaceId={w.id} memos={memosByWorkspace.get(w.id) ?? []} />
+            </div>
           );
         })}
       </div>

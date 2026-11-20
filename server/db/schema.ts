@@ -352,6 +352,25 @@ export const resources = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Workspace memos: short notes on how a topic is going, shown on the dashboard.
+// ---------------------------------------------------------------------------
+
+export const memos = pgTable(
+  "memos",
+  {
+    id: id(),
+    userId: ownerId(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("memos_workspace_created_idx").on(t.workspaceId, t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
 // Books
 // ---------------------------------------------------------------------------
 
@@ -558,6 +577,7 @@ export type Note = typeof notes.$inferSelect;
 export type CodeSnippet = typeof codeSnippets.$inferSelect;
 export type Diagram = typeof diagrams.$inferSelect;
 export type Resource = typeof resources.$inferSelect;
+export type Memo = typeof memos.$inferSelect;
 export type DsaProblem = typeof dsaProblems.$inferSelect;
 export type DsaSolution = typeof dsaSolutions.$inferSelect;
 export type LldExercise = typeof lldExercises.$inferSelect;

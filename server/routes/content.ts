@@ -16,6 +16,8 @@ import {
   lldUpdateSchema,
   noteCreateSchema,
   noteUpdateSchema,
+  memoCreateSchema,
+  memoUpdateSchema,
   resourceCreateSchema,
   resourceUpdateSchema,
   snippetCreateSchema,
@@ -31,7 +33,7 @@ import { localToday, notFound, param, parse, qs, uid } from "../lib/http.ts";
 import { verifyRefs } from "../lib/refs.ts";
 import { scheduleDrain } from "../storage.ts";
 
-const { notes, codeSnippets, diagrams, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights, readingLogs } =
+const { memos, notes, codeSnippets, diagrams, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights, readingLogs } =
   schema;
 
 // ---------------------------------------------------------------------------
@@ -110,6 +112,19 @@ export const snippetsRouter = crudRouter({
     qs(req, "noteId") ? eq(codeSnippets.noteId, qs(req, "noteId")!) : undefined,
     qs(req, "dsaProblemId") ? eq(codeSnippets.dsaProblemId, qs(req, "dsaProblemId")!) : undefined,
   ],
+});
+
+// ---------------------------------------------------------------------------
+// Workspace memos
+// ---------------------------------------------------------------------------
+
+export const memosRouter = crudRouter({
+  table: memos,
+  createSchema: memoCreateSchema,
+  updateSchema: memoUpdateSchema,
+  searchColumns: [memos.body],
+  sortable: { created: memos.createdAt, updated: memos.updatedAt },
+  defaultSort: "created",
 });
 
 // ---------------------------------------------------------------------------

@@ -11,13 +11,11 @@ import {
   LayoutGrid,
   NotebookPen,
   type LucideIcon,
-  PenTool,
   Plus,
-  Star,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import type { DiagramSummary, Folder, Workspace } from "@shared/types";
+import { Link } from "react-router";
+import type { Folder, Workspace } from "@shared/types";
 import { AttachmentsPanel } from "@/components/common/Attachments";
 import {
   BookStatusPill,
@@ -28,14 +26,11 @@ import {
 import { Spinner } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { timeAgo } from "@/lib/dates";
 import {
   useAttachments,
-  useCreate,
   useCreateFolder,
   useList,
 } from "@/lib/queries";
-import { goTo } from "@/lib/app";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import type { CaptureKind } from "@/stores/ui";
@@ -272,20 +267,14 @@ export function TopicView({
           <NotebookPen className="size-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">Notes, code & links</span>
+          <span className="block text-sm font-medium">Notebooks, notes, drawings, code & links</span>
           <span className="block truncate text-xs text-muted-foreground">
-            Typed notes, code snippets and links for {title} are in the Notes app.
+            Everything you write for {title} lives in the Notes app.
           </span>
         </span>
         <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
       </Link>
 
-      <DiagramsSection
-        workspaceId={workspace.id}
-        folderId={here}
-        diagrams={inHere(diagrams.data)}
-        loading={diagrams.isLoading}
-      />
 
       {/* An odd last section spans the full width so the grid never ends on a half-empty row. */}
       <div className="grid gap-6 lg:grid-cols-2 lg:[&>*:last-child:nth-child(odd)]:col-span-2">
@@ -621,129 +610,6 @@ function FolderOutline({
         );
       })}
     </ul>
-  );
-}
-
-/** Excalidraw sketches that live in this folder, as a thumbnail grid. */
-function DiagramsSection({
-  workspaceId,
-  folderId,
-  diagrams,
-  loading,
-}: {
-  workspaceId: string;
-  folderId: string | null;
-  diagrams: DiagramSummary[];
-  loading: boolean;
-}) {
-  const create = useCreate("diagrams");
-  const navigate = useNavigate();
-  const sorted = [...diagrams].sort(
-    (a, b) =>
-      Number(b.isFavorite) - Number(a.isFavorite) ||
-      b.updatedAt.localeCompare(a.updatedAt),
-  );
-  const newDiagram = () =>
-    create.mutate(
-      { workspaceId, folderId, title: "Untitled diagram" },
-      { onSuccess: (d) => goTo(navigate, routes.diagram(d.id)) },
-    );
-  // A notebook is a drawing that starts on an A4 page; it saves as a multi-page PDF.
-  const newNotebook = () =>
-    create.mutate(
-      { workspaceId, folderId, title: "Untitled notebook" },
-      { onSuccess: (d) => goTo(navigate, `${routes.diagram(d.id)}?notebook=1`) },
-    );
-
-  return (
-    <section className="rounded-xl border bg-card shadow-soft">
-      <header className="flex min-h-11 items-center justify-between gap-2 border-b border-border/70 px-4 py-2">
-        <h3 className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
-          <span className="flex size-6 items-center justify-center rounded-md bg-secondary text-primary">
-            <PenTool className="size-3.5" />
-          </span>
-          Diagrams & notebooks
-          {diagrams.length ? (
-            <span className="font-normal text-muted-foreground">
-              {diagrams.length}
-            </span>
-          ) : null}
-        </h3>
-        <div className="flex items-center gap-0.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-primary"
-            onClick={newNotebook}
-            disabled={create.isPending}
-          >
-            <NotebookPen /> Notebook
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-primary"
-            onClick={newDiagram}
-            disabled={create.isPending}
-          >
-            <Plus /> Diagram
-          </Button>
-        </div>
-      </header>
-      <div className="p-3">
-        {loading ? (
-          <Spinner />
-        ) : sorted.length === 0 ? (
-          <button
-            type="button"
-            onClick={newDiagram}
-            disabled={create.isPending}
-            className="w-full rounded-lg px-3 py-5 text-center text-xs text-muted-foreground transition-colors hover:bg-accent/50"
-          >
-            Sketch architectures and flows, or handwrite notes on A4 pages
-            with a pen and save them as PDF.{" "}
-            <span className="font-medium text-primary">Draw one</span>
-          </button>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sorted.map((d) => (
-              <Link
-                key={d.id}
-                to={d.kind === "board" && d.folderId ? routes.notebooks(d.folderId) : routes.diagram(d.id)}
-                className="group overflow-hidden rounded-lg border bg-background transition-[border-color,box-shadow] hover:border-primary/30 hover:shadow-pop"
-              >
-                <div className="flex aspect-[16/10] items-center justify-center overflow-hidden border-b bg-white">
-                  {d.preview ? (
-                    <img
-                      src={d.preview}
-                      alt=""
-                      loading="lazy"
-                      className="size-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <PenTool className="size-6 text-primary/30" />
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                    {d.title}
-                  </span>
-                  {d.isFavorite ? (
-                    <Star
-                      className="size-3.5 shrink-0 fill-warning text-warning"
-                      aria-label="Favourite"
-                    />
-                  ) : null}
-                </div>
-                <p className="-mt-1.5 px-3 pb-2 text-2xs text-muted-foreground">
-                  Edited {timeAgo(d.updatedAt)}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
   );
 }
 

@@ -7,6 +7,7 @@ import type {
   DsaProblemInput,
   DsaSolutionInput,
   LldInput,
+  MemoInput,
   NoteInput,
   ResourceInput,
   SnippetInput,
@@ -25,6 +26,7 @@ import type {
   DsaSolution,
   Folder,
   LldExercise,
+  Memo,
   Note,
   NoteSummary,
   ReadingLog,
@@ -50,6 +52,7 @@ export interface Entities {
   snippets: { list: CodeSnippet; item: CodeSnippet; input: SnippetInput };
   diagrams: { list: DiagramSummary; item: Diagram; input: DiagramInput };
   resources: { list: Resource; item: Resource; input: ResourceInput };
+  memos: { list: Memo; item: Memo; input: MemoInput };
   dsa: { list: DsaProblem; item: DsaProblem; input: DsaProblemInput };
   lld: { list: LldExercise; item: LldExercise; input: LldInput };
   books: { list: Book; item: Book; input: BookInput };
@@ -62,6 +65,7 @@ const PATHS: Record<EntityName, string> = {
   snippets: "/snippets",
   diagrams: "/diagrams",
   resources: "/resources",
+  memos: "/memos",
   dsa: "/dsa/problems",
   lld: "/lld",
   books: "/books",

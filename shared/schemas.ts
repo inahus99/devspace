@@ -173,6 +173,12 @@ export const resourceCreateSchema = z.object({
 });
 export const resourceUpdateSchema = resourceCreateSchema.partial();
 
+export const memoCreateSchema = z.object({
+  workspaceId: zId,
+  body: z.string().trim().min(1, "Write something first").max(2000),
+});
+export const memoUpdateSchema = memoCreateSchema.omit({ workspaceId: true }).partial();
+
 export const dsaProblemCreateSchema = z.object({
   workspaceId: zId,
   folderId: zOptId,
@@ -316,6 +322,7 @@ export type NoteInput = z.infer<typeof noteCreateSchema>;
 export type SnippetInput = z.infer<typeof snippetCreateSchema>;
 export type DiagramInput = z.infer<typeof diagramCreateSchema>;
 export type ResourceInput = z.infer<typeof resourceCreateSchema>;
+export type MemoInput = z.infer<typeof memoCreateSchema>;
 export type DsaProblemInput = z.infer<typeof dsaProblemCreateSchema>;
 export type DsaSolutionInput = z.infer<typeof dsaSolutionCreateSchema>;
 export type LldInput = z.infer<typeof lldCreateSchema>;

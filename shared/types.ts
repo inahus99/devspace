@@ -19,6 +19,7 @@ export type CodeSnippet = Tagged<S.CodeSnippet>;
 export type Diagram = Serialized<S.Diagram>;
 export type DiagramSummary = Omit<Diagram, "scene">;
 export type Resource = Tagged<S.Resource>;
+export type Memo = Serialized<S.Memo>;
 export type DsaProblem = Tagged<S.DsaProblem>;
 export type DsaSolution = Serialized<S.DsaSolution>;
 export type LldExercise = Tagged<S.LldExercise>;
