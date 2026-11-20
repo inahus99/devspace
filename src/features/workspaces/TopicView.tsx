@@ -39,6 +39,7 @@ import {
   useCreateFolder,
   useList,
 } from "@/lib/queries";
+import { goTo } from "@/lib/app";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import type { CaptureKind } from "@/stores/ui";
@@ -748,13 +749,13 @@ function DiagramsSection({
   const newDiagram = () =>
     create.mutate(
       { workspaceId, folderId, title: "Untitled diagram" },
-      { onSuccess: (d) => navigate(routes.diagram(d.id)) },
+      { onSuccess: (d) => goTo(navigate, routes.diagram(d.id)) },
     );
   // A notebook is a drawing that starts on an A4 page; it saves as a multi-page PDF.
   const newNotebook = () =>
     create.mutate(
       { workspaceId, folderId, title: "Untitled notebook" },
-      { onSuccess: (d) => navigate(`${routes.diagram(d.id)}?notebook=1`) },
+      { onSuccess: (d) => goTo(navigate, `${routes.diagram(d.id)}?notebook=1`) },
     );
 
   return (

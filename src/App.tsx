@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, type ReactNode, Suspense, useEffect } from "react";
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from "react-router";
 import { Toaster } from "sonner";
 import { ConfirmHost } from "@/components/common/ConfirmDialog";
@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { ThemeSync } from "@/hooks/useTheme";
 import { setUnauthorizedHandler } from "@/lib/api";
+import { devspaceHref, isExternalHref, isNotesApp, notesHref, notesSeparate } from "@/lib/app";
 import { useMe } from "@/lib/queries";
 
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage"));
@@ -72,7 +73,23 @@ function Root() {
   );
 }
 
-const router = createBrowserRouter([
+/** Sends an address that belongs to the other app (Notes ↔ DevSpace) there. */
+function OtherApp({ to }: { to: "notes" | "devspace" }) {
+  const { pathname, search, hash } = useLocation();
+  const href = to === "notes" ? notesHref(pathname + search + hash) : devspaceHref(pathname + search + hash);
+  useEffect(() => {
+    if (isExternalHref(href)) window.location.replace(href);
+  }, [href]);
+  return isExternalHref(href) ? <FullPageSpinner /> : <NotFoundPage />;
+}
+
+/** Full-screen pages of the Notes app, without DevSpace's sidebar. */
+function Screen({ children }: { children: ReactNode }) {
+  return <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground">{children}</div>;
+}
+
+/** The Notes app: notebooks, drawings and the book reader. */
+const notesRoutes = [
   {
     element: <Root />,
     children: [
@@ -80,8 +97,31 @@ const router = createBrowserRouter([
       {
         element: <RequireAuthBare />,
         children: [
+          { index: true, element: <Navigate to="/notebooks" replace /> },
           { path: "notebooks", element: <NotebooksApp /> },
           { path: "notebooks/:folderId", element: <NotebooksApp /> },
+          { path: "diagrams/:id", element: <Screen><DiagramPage /></Screen> },
+          { path: "books/:id/read", element: <Screen><BookReaderPage /></Screen> },
+          { path: "*", element: <OtherApp to="devspace" /> },
+        ],
+      },
+    ],
+  },
+];
+
+// When the Notes app runs separately, its pages in DevSpace forward there.
+const toNotes = <OtherApp to="notes" />;
+
+const devspaceRoutes = [
+  {
+    element: <Root />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+      {
+        element: <RequireAuthBare />,
+        children: [
+          { path: "notebooks", element: notesSeparate ? toNotes : <NotebooksApp /> },
+          { path: "notebooks/:folderId", element: notesSeparate ? toNotes : <NotebooksApp /> },
         ],
       },
       {
@@ -92,13 +132,13 @@ const router = createBrowserRouter([
           { path: "w/:id", element: <WorkspacePage /> },
           { path: "notes/:id", element: <NotePage /> },
           { path: "snippets/:id", element: <SnippetPage /> },
-          { path: "diagrams/:id", element: <DiagramPage /> },
+          { path: "diagrams/:id", element: notesSeparate ? toNotes : <DiagramPage /> },
           { path: "dsa/:id", element: <DsaProblemPage /> },
           { path: "lld/:id", element: <LldExercisePage /> },
           { path: "resources", element: <ResourceLibraryPage /> },
           { path: "books", element: <BookshelfPage /> },
           { path: "books/:id", element: <BookPage /> },
-          { path: "books/:id/read", element: <BookReaderPage /> },
+          { path: "books/:id/read", element: notesSeparate ? toNotes : <BookReaderPage /> },
           // The daily planner was folded into the calendar's Day view; keep old links working.
           { path: "planner", element: <PlannerRedirect /> },
           { path: "calendar", element: <CalendarPage /> },
@@ -109,7 +149,9 @@ const router = createBrowserRouter([
       },
     ],
   },
-]);
+];
+
+const router = createBrowserRouter(isNotesApp ? notesRoutes : devspaceRoutes);
 
 export function App() {
   return <RouterProvider router={router} />;

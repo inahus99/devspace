@@ -31,6 +31,12 @@ const schema = z.object({
   GITHUB_SYNC_INTERVAL_MIN: z.coerce.number().min(0).default(60),
   /** Which DevSpace account to mirror; defaults to the only account when there is one. */
   GITHUB_SYNC_USER_EMAIL: z.string().optional(),
+  /** Public address of the separate Notes app (notebooks, drawings, book reader). Unset: they stay inside DevSpace. */
+  NOTES_URL: z
+    .string()
+    .url()
+    .optional()
+    .transform((v) => v?.replace(/\/+$/, "")),
   /** Railway sets this automatically; used to decide whether the DB needs TLS. */
   PGSSLMODE: z.string().optional(),
 });

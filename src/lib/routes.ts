@@ -1,8 +1,9 @@
 import type { SearchResultType } from "@shared/types";
+import { devspaceHref, notesHref } from "./app";
 
 export type WorkspaceTab = "contents" | "overview" | "notes" | "snippets" | "resources" | "files" | "activities" | "dsa" | "lld";
 
-export const routes = {
+const paths = {
   dashboard: () => "/",
   workspaces: () => "/workspaces",
   workspace: (id: string, opts?: { tab?: WorkspaceTab; folder?: string | null }) => {
@@ -34,6 +35,24 @@ export const routes = {
   analytics: () => "/analytics",
   settings: () => "/settings",
 };
+
+type Paths = typeof paths;
+const NOTES_ROUTES = new Set<keyof Paths>(["diagram", "notebooks", "bookReader"]);
+
+/**
+ * Addresses of every page. Notebooks, drawings and the book reader belong to the Notes app
+ * and everything else to DevSpace; when the two run separately, a route that belongs to the
+ * other app comes back as its full URL (react-router's Link handles those as normal links).
+ */
+export const routes = Object.fromEntries(
+  Object.entries(paths).map(([name, fn]) => [
+    name,
+    (...args: unknown[]) => {
+      const path = (fn as (...a: unknown[]) => string)(...args);
+      return NOTES_ROUTES.has(name as keyof Paths) ? notesHref(path) : devspaceHref(path);
+    },
+  ]),
+) as Paths;
 
 /** Where to navigate for a piece of content (search results, activity links, dashboard). */
 export function contentHref(

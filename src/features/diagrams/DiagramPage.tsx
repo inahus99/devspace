@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ItemNotFound } from "@/features/misc/NotFoundPage";
 import { useAutosave } from "@/hooks/useAutosave";
 import { api, ApiError, errorMessage } from "@/lib/api";
+import { goTo, isNotesApp } from "@/lib/app";
 import { useDelete, useDeleteAttachment, useFolders, useItem, useUpdate, useUpload, useWorkspaceMap } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -129,7 +130,12 @@ export function DiagramEditor({
     return p;
   };
 
-  const backTo = diagram.bookId && !diagram.folderId ? routes.book(diagram.bookId) : routes.workspace(diagram.workspaceId, { folder: diagram.folderId ?? undefined });
+  // In the Notes app a drawing belongs to its folder there; in DevSpace, to the workspace page.
+  const backTo = isNotesApp
+    ? routes.notebooks(diagram.folderId)
+    : diagram.bookId && !diagram.folderId
+      ? routes.book(diagram.bookId)
+      : routes.workspace(diagram.workspaceId, { folder: diagram.folderId ?? undefined });
 
   const initialData = useMemo<ExcalidrawInitialDataState>(
     () => ({
@@ -195,7 +201,7 @@ export function DiagramEditor({
 
   const remove = async () => {
     if (!(await confirm({ title: `Delete “${title}”?`, destructive: true }))) return;
-    del.mutate(diagram.id, { onSuccess: () => navigate(backTo) });
+    del.mutate(diagram.id, { onSuccess: () => goTo(navigate, backTo) });
   };
 
   const pdf = async (mode: "save" | "download", opts?: { quiet?: boolean }) => {
@@ -313,7 +319,7 @@ export function DiagramEditor({
         {compact ? null : (
           <nav className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" aria-label="Breadcrumb">
             {ws ? (
-              <Link to={routes.workspace(ws.id)} className="flex shrink-0 items-center gap-1.5 hover:text-foreground">
+              <Link to={isNotesApp ? routes.notebooks() : routes.workspace(ws.id)} className="flex shrink-0 items-center gap-1.5 hover:text-foreground">
                 <WorkspaceIcon icon={ws.icon} color={ws.color} size="sm" />
                 {ws.name}
               </Link>

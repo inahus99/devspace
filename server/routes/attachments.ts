@@ -45,7 +45,7 @@ export const attachmentsRouter = Router();
 attachmentsRouter.get("/", async (req, res) => {
   const userId = uid(req);
   const where = [eq(attachments.userId, userId)];
-  for (const key of ["noteId", "dsaProblemId", "lldExerciseId", "bookId", "diagramId", "workspaceId"] as const) {
+  for (const key of ["noteId", "dsaProblemId", "lldExerciseId", "bookId", "diagramId", "workspaceId", "label"] as const) {
     const v = qs(req, key);
     if (v) where.push(eq(attachments[key], v));
   }

@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { timeAgo } from "@/lib/dates";
 import { useAttachments, useCreate, useCreateFolder, useFolders, useList, useWorkspaces } from "@/lib/queries";
+import { isNotesApp } from "@/lib/app";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { BooksSection, DrawingsSection, FolderDrawingsMenu } from "./Library";
 
 // Excalidraw (~2 MB) loads only when a board is opened for editing.
 const BoardEditor = lazy(() => import("./BoardEditor"));
@@ -63,7 +65,7 @@ export default function NotebooksApp() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = "Notebooks · DevSpace";
+    document.title = isNotesApp ? "Notes" : "Notebooks · DevSpace";
     return () => void (document.title = prev);
   }, []);
 
@@ -85,7 +87,7 @@ export default function NotebooksApp() {
             <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <NotebookPen className="size-4" />
             </span>
-            Notebooks
+            {isNotesApp ? "Notes" : "Notebooks"}
           </Link>
           <Button variant="ghost" size="icon" className="size-8" onClick={toggleSidebar} aria-label="Hide folders">
             <PanelLeftClose />
@@ -99,7 +101,7 @@ export default function NotebooksApp() {
           <FolderTree workspaces={workspaces.data ?? []} folders={folders.data ?? []} boards={boardByFolder} selected={folderId ?? null} />
         )}
         <div className="border-t p-2">
-          <Link to="/" className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <Link to={routes.dashboard()} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             <ArrowLeft className="size-3.5" /> Back to DevSpace
           </Link>
         </div>
@@ -392,7 +394,7 @@ function Home({
         <div className="mb-6 flex items-center gap-2">
           <SidebarToggle sidebar={sidebar} onToggle={onToggleSidebar} />
           <div>
-            <h1 className="text-[28px] leading-tight">Notebooks</h1>
+            <h1 className="text-[28px] leading-tight">{isNotesApp ? "Notes" : "Notebooks"}</h1>
             <p className="text-sm text-muted-foreground">One long page per folder. Write with your pen, then press Done to keep it as a PDF.</p>
           </div>
         </div>
@@ -430,6 +432,8 @@ function Home({
             })}
           </div>
         )}
+        <DrawingsSection folders={folders} workspaces={workspaces} />
+        <BooksSection />
       </div>
     </div>
   );
@@ -506,6 +510,7 @@ function Board({
             </Button>
           </div>
         ) : null}
+        <FolderDrawingsMenu folder={folder} />
         <Button variant="ghost" size="sm" className="h-8 text-muted-foreground" asChild>
           <Link to={routes.workspace(folder.workspaceId, { folder: folder.id })} title="Open this folder in DevSpace">
             DevSpace

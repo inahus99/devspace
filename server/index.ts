@@ -92,10 +92,16 @@ if (fs.existsSync(path.join(clientDir, "index.html"))) {
     express.static(path.join(clientDir, "assets"), { immutable: true, maxAge: "1y", fallthrough: false }),
   );
   app.use(express.static(clientDir, { index: false, maxAge: "1h" }));
+  // Tell the UI where the Notes app lives, so notebooks, drawings and the book reader open there.
+  const escape = (s: string) => s.replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+  const page = fs
+    .readFileSync(path.join(clientDir, "index.html"), "utf8")
+    .replace("<head>", `<head>
+    <meta name="devspace-app" content="devspace" data-notes-url="${escape(env.NOTES_URL ?? "")}" />`);
   app.use((req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
     res.setHeader("Cache-Control", "no-cache");
-    res.sendFile(path.join(clientDir, "index.html"));
+    res.type("html").send(page);
   });
 }
 

@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, ClipboardCopy, Download, ImagePlus, Loader2, Minus, MoveHorizontal, NotebookPen, PanelRightClose, Plus } from "lucide-react";
+import { ArrowLeft, BookOpen, ClipboardCopy, Download, ImagePlus, Loader2, Minus, MoveHorizontal, NotebookPen, PanelRightClose, Plus, Upload } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -9,11 +9,12 @@ import { EmptyState, ErrorState, FullPageSpinner } from "@/components/common/sta
 import { Button } from "@/components/ui/button";
 import type { NotebookHandle } from "@/features/diagrams/NotebookPane";
 import { errorMessage } from "@/lib/api";
+import { isNotesApp } from "@/lib/app";
 import { todayISO } from "@/lib/dates";
 import { useAttachments, useBookProgress, useCreate, useItem, useList, useUpdate } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { BOOK_FILE_LABEL } from "./bookFile";
+import { BOOK_FILE_LABEL, isPdfFile, uploadBookPdf } from "./bookFile";
 
 const NotebookPane = lazy(() => import("@/features/diagrams/NotebookPane"));
 
@@ -27,21 +28,54 @@ export default function BookReaderPage() {
   const file = (files.data ?? [])
     .filter((a) => a.label === BOOK_FILE_LABEL && a.kind === "pdf")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-  if (!file)
-    return (
-      <EmptyState
-        icon={BookOpen}
-        className="m-8"
-        title="No PDF for this book yet"
-        description="Upload the book's PDF on its page to read it here."
-        action={
-          <Button asChild>
-            <Link to={routes.book(book.data.id)}>Go to the book</Link>
-          </Button>
-        }
-      />
-    );
+  if (!file) return <NoPdf book={book.data} onUploaded={() => void files.refetch()} />;
   return <Reader key={file.id} book={book.data} url={file.url} fileName={file.fileName} />;
+}
+
+function NoPdf({ book, onUploaded }: { book: Book; onUploaded: () => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const onFile = async (f: File) => {
+    if (!isPdfFile(f)) return void toast.error("Choose a PDF file");
+    setBusy(true);
+    try {
+      await uploadBookPdf(book, f);
+      onUploaded();
+    } catch (err) {
+      toast.error(`Upload failed: ${errorMessage(err)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <EmptyState
+      icon={BookOpen}
+      className="m-8"
+      title={`No PDF for “${book.title}” yet`}
+      description="Upload the book's PDF to read it here, with a notebook beside it."
+      action={
+        <div className="flex flex-wrap justify-center gap-2">
+          <input
+            ref={input}
+            type="file"
+            accept="application/pdf,.pdf"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void onFile(f);
+            }}
+          />
+          <Button onClick={() => input.current?.click()} disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" /> : <Upload />} Upload PDF
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to={isNotesApp ? routes.notebooks() : routes.book(book.id)}>{isNotesApp ? "Back" : "Go to the book"}</Link>
+          </Button>
+        </div>
+      }
+    />
+  );
 }
 
 type Zoom = "fit" | number;
@@ -196,8 +230,8 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b bg-card/80 px-3 py-2 backdrop-blur sm:px-4">
         <Button variant="ghost" size="sm" className="h-8" asChild>
-          <Link to={routes.book(book.id)}>
-            <ArrowLeft /> <span className="hidden sm:inline">Book</span>
+          <Link to={isNotesApp ? routes.notebooks() : routes.book(book.id)}>
+            <ArrowLeft /> <span className="hidden sm:inline">{isNotesApp ? "Notes" : "Book"}</span>
           </Link>
         </Button>
         <p className="min-w-0 flex-1 truncate text-sm font-semibold" title={book.title}>
