@@ -2,9 +2,7 @@ import {
   BookOpen,
   Boxes,
   ChevronRight,
-  Code2,
   ExternalLink,
-  FileText,
   Folder as FolderIcon,
   FolderOpen,
   FolderPlus,
@@ -12,7 +10,6 @@ import {
   HelpCircle,
   LayoutGrid,
   NotebookPen,
-  Link2,
   type LucideIcon,
   PenTool,
   Plus,
@@ -31,7 +28,6 @@ import {
 import { Spinner } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ResourceTypeIcon } from "@/features/resources/resourceMeta";
 import { timeAgo } from "@/lib/dates";
 import {
   useAttachments,
@@ -70,9 +66,6 @@ export function TopicView({
   const kind = workspace.kind;
   const scope = { workspaceId: workspace.id };
   // One workspace-wide fetch per kind; sections and folder-card counts are derived from it.
-  const notes = useList("notes", scope);
-  const snippets = useList("snippets", scope);
-  const resources = useList("resources", scope);
   const questions = useList("dsa", scope);
   const exercises = useList("lld", scope);
   const books = useList("books", scope, { enabled: !folder });
@@ -93,9 +86,6 @@ export function TopicView({
         if (r.folderId) count.set(r.folderId, (count.get(r.folderId) ?? 0) + 1);
     };
     for (const rows of [
-      notes.data,
-      snippets.data,
-      resources.data,
       questions.data,
       exercises.data,
       files.data,
@@ -111,24 +101,17 @@ export function TopicView({
         cover.set(d.folderId, d.preview);
     return { count, cover };
   }, [
-    notes.data,
-    snippets.data,
-    resources.data,
     questions.data,
     exercises.data,
     files.data,
     diagrams.data,
   ]);
 
-  const hereNotes = inHere(notes.data);
-  const hereSnippets = inHere(snippets.data);
-  const hereResources = inHere(resources.data);
   const hereQuestions = inHere(questions.data);
   const hereExercises = inHere(exercises.data);
   const wsBooks = folder ? [] : (books.data ?? []);
   const title = folder?.name ?? workspace.name;
 
-  const showCode = kind !== "general" || hereSnippets.length > 0;
   const showQuestions = kind === "dsa" || hereQuestions.length > 0;
   const showExercises = kind === "lld" || hereExercises.length > 0;
   const showBooks = !folder && (kind === "general" || wsBooks.length > 0);
@@ -182,67 +165,6 @@ export function TopicView({
         })}
       </TopicSection>,
     );
-  sections.push(
-    <TopicSection
-      key="notes"
-      icon={FileText}
-      title="Notes"
-      count={hereNotes.length}
-      loading={notes.isLoading}
-      onAdd={() => capture("note")}
-      addLabel="Note"
-      empty={
-        kind === "dsa"
-          ? "Intuition, explanations, edge cases."
-          : "Your own notes, summaries and takeaways."
-      }
-    >
-      {hereNotes.map((n) => (
-        <Row
-          key={n.id}
-          to={routes.note(n.id)}
-          title={n.title || "Untitled"}
-          meta={`Edited ${timeAgo(n.updatedAt)}`}
-        />
-      ))}
-    </TopicSection>,
-  );
-  if (showCode)
-    sections.push(
-      <TopicSection
-        key="code"
-        icon={Code2}
-        title={kind === "dsa" ? "Pseudocode & code" : "Code"}
-        count={hereSnippets.length}
-        loading={snippets.isLoading}
-        onAdd={() => capture("snippet")}
-        addLabel="Snippet"
-        empty="Templates and snippets you can reuse."
-      >
-        {hereSnippets.map((s) => (
-          <li key={s.id}>
-            <Link
-              to={routes.snippet(s.id)}
-              className="block rounded-lg px-3 py-2 transition-colors hover:bg-accent/60"
-            >
-              <span className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-medium">
-                  {s.title || "Untitled"}
-                </span>
-                <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 font-mono text-2xs text-muted-foreground">
-                  {s.language}
-                </span>
-              </span>
-              {s.code ? (
-                <pre className="mt-1.5 line-clamp-4 overflow-hidden rounded-md border bg-muted/40 px-2.5 py-1.5 font-mono text-[11.5px] leading-5 whitespace-pre-wrap text-muted-foreground">
-                  {s.code}
-                </pre>
-              ) : null}
-            </Link>
-          </li>
-        ))}
-      </TopicSection>,
-    );
   if (showExercises)
     sections.push(
       <TopicSection
@@ -268,39 +190,6 @@ export function TopicView({
         ))}
       </TopicSection>,
     );
-  sections.push(
-    <TopicSection
-      key="links"
-      icon={Link2}
-      title="Links"
-      count={hereResources.length}
-      loading={resources.isLoading}
-      onAdd={() => capture("resource")}
-      addLabel="Link"
-      empty="Articles, videos, talks, docs."
-    >
-      {hereResources.map((r) => (
-        <li
-          key={r.id}
-          className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-accent/60"
-        >
-          <ResourceTypeIcon type={r.type} className="size-4 shrink-0" />
-          <a
-            href={r.url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="min-w-0 flex-1"
-          >
-            <span className="block truncate text-sm">{r.title}</span>
-            <span className="block truncate text-2xs text-muted-foreground">
-              {hostOf(r.url)}
-            </span>
-          </a>
-          <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-        </li>
-      ))}
-    </TopicSection>,
-  );
   if (showQuestions)
     sections.push(
       <TopicSection
@@ -375,6 +264,22 @@ export function TopicView({
         }
       />
 
+      <Link
+        to={here ? routes.notebooks(here, { tab: "notes" }) : routes.notesWorkspace(workspace.id)}
+        className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-soft transition-colors hover:border-primary/30 hover:bg-accent/40"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+          <NotebookPen className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">Notes, code & links</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            Typed notes, code snippets and links for {title} are in the Notes app.
+          </span>
+        </span>
+        <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+      </Link>
+
       <DiagramsSection
         workspaceId={workspace.id}
         folderId={here}
@@ -388,14 +293,6 @@ export function TopicView({
       </div>
     </div>
   );
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
 }
 
 function SubTopics({
@@ -913,16 +810,3 @@ function TopicSection({
   );
 }
 
-function Row({ to, title, meta }: { to: string; title: string; meta: string }) {
-  return (
-    <li>
-      <Link
-        to={to}
-        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-accent/60"
-      >
-        <span className="truncate text-sm">{title}</span>
-        <span className="shrink-0 text-2xs text-muted-foreground">{meta}</span>
-      </Link>
-    </li>
-  );
-}

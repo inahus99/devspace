@@ -1,12 +1,11 @@
 import { Archive, ChevronRight, Folder as FolderIcon, FolderPlus, MoreHorizontal, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { WORKSPACE_KIND_LABELS } from "@shared/constants";
 import { formatMinutes } from "@shared/time";
 import { AttachmentsPanel } from "@/components/common/Attachments";
 import { Banner, type BannerPatch } from "@/components/common/Banner";
 import { DEFAULT_BANNER_URL } from "@/lib/banners";
-import { flattenFolders } from "@/components/common/fields";
 import { ErrorState, FullPageSpinner, Section, Stat } from "@/components/common/states";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
 import { FolderTree } from "@/components/layout/FolderTree";
@@ -17,13 +16,10 @@ import { Progress } from "@/components/ui/progress";
 import { DsaTracker } from "@/features/dsa/DsaTracker";
 import { LldList } from "@/features/lld/LldList";
 import { ItemNotFound } from "@/features/misc/NotFoundPage";
-import { NotesList } from "@/features/notes/NotesList";
 import { WorkspaceActivities } from "@/features/planner/WorkspaceActivities";
-import { ResourceList } from "@/features/resources/ResourceList";
-import { SnippetsList } from "@/features/snippets/SnippetsList";
 import { timeAgo } from "@/lib/dates";
-import { useList, useUpdateFolder, useUpdateWorkspace, useWorkspaceFolders, useWorkspaces, useWorkspaceSummaries } from "@/lib/queries";
-import { routes, type WorkspaceTab } from "@/lib/routes";
+import { useUpdateFolder, useUpdateWorkspace, useWorkspaceFolders, useWorkspaces, useWorkspaceSummaries } from "@/lib/queries";
+import type { WorkspaceTab } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { type CaptureKind, useUi } from "@/stores/ui";
 import { TopicView } from "./TopicView";
@@ -62,7 +58,7 @@ export default function WorkspacePage() {
     const special: WorkspaceTab[] = [];
     if (ws?.kind === "dsa" || (summary?.dsaProblems ?? 0) > 0) special.push("dsa");
     if (ws?.kind === "lld" || (summary?.lldExercises ?? 0) > 0) special.push("lld");
-    return ["contents", ...special, "notes", "snippets", "resources", "files", "activities", "overview"];
+    return ["contents", ...special, "files", "activities", "overview"];
   }, [ws?.kind, summary?.dsaProblems, summary?.lldExercises]);
 
   // Every workspace and folder opens on its topic page: sub-folders, screenshots, notes, code, links, questions.
@@ -244,12 +240,9 @@ export default function WorkspacePage() {
                 <Stat label="Last active" value={<span className="text-base">{summary?.lastActivityAt ? timeAgo(summary.lastActivityAt) : "—"}</span>} />
               </div>
               {pct !== null ? <Progress value={pct} className="h-1.5" /> : null}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3">
                 {(
                   [
-                    ["notes", summary?.notes],
-                    ["snippets", summary?.snippets],
-                    ["resources", summary?.resources],
                     ["dsa", summary?.dsaProblems],
                     ["lld", summary?.lldExercises],
                   ] as const
@@ -260,7 +253,6 @@ export default function WorkspacePage() {
                   </button>
                 ))}
               </div>
-              <RecentNotes workspaceId={ws.id} onAll={() => setTab("notes")} />
               <WorkspaceActivities workspaceId={ws.id} />
             </div>
             <Section
@@ -286,12 +278,6 @@ export default function WorkspacePage() {
           <DsaTracker workspaceId={ws.id} folderId={folder?.id ?? null} />
         ) : tab === "lld" ? (
           <LldList workspaceId={ws.id} folderId={folder?.id ?? null} />
-        ) : tab === "notes" ? (
-          <NotesList workspaceId={ws.id} folderId={folder?.id ?? null} />
-        ) : tab === "snippets" ? (
-          <SnippetsList workspaceId={ws.id} folderId={folder?.id ?? null} />
-        ) : tab === "resources" ? (
-          <ResourceList workspaceId={ws.id} folderId={folder?.id ?? null} />
         ) : tab === "files" ? (
           <AttachmentsPanel
             target={{ workspaceId: ws.id, folderId: folder?.id ?? null }}
@@ -315,37 +301,3 @@ export default function WorkspacePage() {
   );
 }
 
-function RecentNotes({ workspaceId, onAll }: { workspaceId: string; onAll: () => void }) {
-  const { data } = useList("notes", { workspaceId, limit: 5 });
-  const folders = useWorkspaceFolders(workspaceId);
-  const paths = new Map(flattenFolders(folders).map((f) => [f.folder.id, f.path]));
-  return (
-    <Section
-      title="Recently edited notes"
-      action={
-        <button type="button" onClick={onAll} className="rounded-md px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-secondary">
-          View all
-        </button>
-      }
-      bodyClassName="p-0"
-    >
-      {!data?.length ? (
-        <p className="px-4 py-6 text-center text-xs text-muted-foreground">No notes in this workspace yet.</p>
-      ) : (
-        <ul className="divide-y">
-          {data.map((n) => (
-            <li key={n.id}>
-              <Link to={routes.note(n.id)} className="flex items-center justify-between gap-3 px-4 py-2 text-sm hover:bg-accent/40">
-                <span className="min-w-0 truncate">{n.title || "Untitled"}</span>
-                <span className="shrink-0 text-2xs text-muted-foreground">
-                  {n.folderId ? `${paths.get(n.folderId)} · ` : ""}
-                  {timeAgo(n.updatedAt)}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
-  );
-}

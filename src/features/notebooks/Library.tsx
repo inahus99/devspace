@@ -185,20 +185,24 @@ function TabBody({ action, loading, empty, children }: { action: React.ReactNode
   );
 }
 
-export function FolderNotes({ folder }: { folder: Folder }) {
-  const notes = useList("notes", { workspaceId: folder.workspaceId, folderId: folder.id });
+/** Where items live: a folder, or a workspace's top level (folderId null). */
+export type Place = { workspaceId: string; folderId: string | null };
+const scopeOf = (p: Place) => ({ workspaceId: p.workspaceId, folderId: p.folderId ?? "root" });
+
+export function FolderNotes({ place }: { place: Place }) {
+  const notes = useList("notes", scopeOf(place));
   const [open, setOpen] = useState(false);
   const list = [...(notes.data ?? [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return (
     <TabBody
       loading={notes.isLoading}
-      empty={list.length ? null : "No typed notes in this folder yet."}
+      empty={list.length ? null : "No typed notes here yet."}
       action={
         <>
           <Button size="sm" onClick={() => setOpen(true)}>
             <Plus /> New note
           </Button>
-          <NoteCreateDialog open={open} onOpenChange={setOpen} defaults={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
+          <NoteCreateDialog open={open} onOpenChange={setOpen} defaults={{ workspaceId: place.workspaceId, folderId: place.folderId ?? undefined }} />
         </>
       }
     >
@@ -220,20 +224,20 @@ export function FolderNotes({ folder }: { folder: Folder }) {
   );
 }
 
-export function FolderCode({ folder }: { folder: Folder }) {
-  const snippets = useList("snippets", { workspaceId: folder.workspaceId, folderId: folder.id });
+export function FolderCode({ place }: { place: Place }) {
+  const snippets = useList("snippets", scopeOf(place));
   const [open, setOpen] = useState(false);
   const list = [...(snippets.data ?? [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return (
     <TabBody
       loading={snippets.isLoading}
-      empty={list.length ? null : "No code snippets in this folder yet."}
+      empty={list.length ? null : "No code snippets here yet."}
       action={
         <>
           <Button size="sm" onClick={() => setOpen(true)}>
             <Plus /> New snippet
           </Button>
-          <SnippetDialog open={open} onOpenChange={setOpen} defaults={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
+          <SnippetDialog open={open} onOpenChange={setOpen} defaults={{ workspaceId: place.workspaceId, folderId: place.folderId ?? undefined }} />
         </>
       }
     >
@@ -255,8 +259,8 @@ export function FolderCode({ folder }: { folder: Folder }) {
   );
 }
 
-export function FolderLinks({ folder }: { folder: Folder }) {
-  const links = useList("resources", { workspaceId: folder.workspaceId, folderId: folder.id });
+export function FolderLinks({ place }: { place: Place }) {
+  const links = useList("resources", scopeOf(place));
   const create = useCreate("resources");
   const list = [...(links.data ?? [])].sort((a, b) => a.title.localeCompare(b.title));
   return (
@@ -274,7 +278,7 @@ export function FolderLinks({ folder }: { folder: Folder }) {
               } catch {
                 /* the server validates the address */
               }
-              const r = await create.mutateAsync({ workspaceId: folder.workspaceId, folderId: folder.id, title, url }).catch(() => null);
+              const r = await create.mutateAsync({ workspaceId: place.workspaceId, folderId: place.folderId, title, url }).catch(() => null);
               return !!r;
             }}
           />
@@ -282,7 +286,7 @@ export function FolderLinks({ folder }: { folder: Folder }) {
       }
     >
       {list.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">No links in this folder yet. Paste one above.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">No links here yet. Paste one above.</p>
       ) : (
         <ul className="divide-y rounded-xl border bg-card shadow-soft">
           {list.map((r) => (

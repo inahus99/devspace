@@ -162,7 +162,11 @@ function NoteEditor({ note }: { note: Note }) {
 
   const remove = async () => {
     if (!(await confirm({ title: "Delete this note?", description: "The note and its attached images and files are permanently deleted.", destructive: true }))) return;
-    const back = isNotesApp ? routes.notebooks(note.folderId, { tab: "notes" }) : routes.workspace(note.workspaceId, { tab: "notes", folder: note.folderId });
+    const back = isNotesApp
+      ? note.folderId
+        ? routes.notebooks(note.folderId, { tab: "notes" })
+        : routes.notesWorkspace(note.workspaceId)
+      : routes.workspace(note.workspaceId, { tab: "notes", folder: note.folderId });
     del.mutate(note.id, { onSuccess: () => goTo(navigate, back) });
   };
 
@@ -172,7 +176,7 @@ function NoteEditor({ note }: { note: Note }) {
       <div className="flex flex-wrap items-center justify-between gap-2 pb-6 text-xs text-muted-foreground">
         <nav className="flex min-w-0 items-center gap-1" aria-label="Breadcrumb">
           {workspace ? (
-            <Link to={isNotesApp ? routes.notebooks() : routes.workspace(workspace.id, { tab: "notes" })} className="flex items-center gap-1.5 hover:text-foreground">
+            <Link to={isNotesApp ? routes.notesWorkspace(workspace.id) : routes.workspace(workspace.id, { tab: "notes" })} className="flex items-center gap-1.5 hover:text-foreground">
               <WorkspaceIcon icon={workspace.icon} color={workspace.color} size="sm" />
               {workspace.name}
             </Link>

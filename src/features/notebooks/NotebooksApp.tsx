@@ -259,6 +259,19 @@ function FolderTree({
                 </button>
                 <NewFolderButton workspaceId={w.id} parentId={null} onCreated={() => toggle(key, true)} />
               </div>
+              {open && !matches ? (
+                <NavLink
+                  to={routes.notesWorkspace(w.id)}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2 rounded-lg py-1.5 pr-2 pl-8 text-[12px] transition-colors hover:bg-accent/60",
+                      isActive ? "bg-accent font-medium text-primary" : "text-muted-foreground",
+                    )
+                  }
+                >
+                  <FileText className="size-3.5 shrink-0" /> Not in a folder
+                </NavLink>
+              ) : null}
               {open ? (
                 <FolderLevel parent={key} depth={1} childrenOf={childrenOf} boards={boards} selected={selected} expanded={expanded} matches={matches} onToggle={toggle} />
               ) : null}
@@ -556,35 +569,24 @@ function Board({
           </Link>
         </Button>
       </header>
-      <nav className="flex gap-1 border-b bg-card/40 px-3" aria-label="In this folder">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() =>
-              setParams((p) => {
-                if (t.id === "notebook") p.delete("tab");
-                else p.set("tab", t.id);
-                return p;
-              })
-            }
-            aria-current={tab === t.id ? "page" : undefined}
-            className={cn(
-              "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] transition-colors",
-              tab === t.id ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <t.icon className="size-3.5" /> {t.label}
-          </button>
-        ))}
-      </nav>
+      <TabBar
+        tabs={TABS}
+        active={tab}
+        onSelect={(id) =>
+          setParams((p) => {
+            if (id === "notebook") p.delete("tab");
+            else p.set("tab", id);
+            return p;
+          })
+        }
+      />
 
       {tab === "notes" ? (
-        <FolderNotes folder={folder} />
+        <FolderNotes place={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
       ) : tab === "code" ? (
-        <FolderCode folder={folder} />
+        <FolderCode place={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
       ) : tab === "links" ? (
-        <FolderLinks folder={folder} />
+        <FolderLinks place={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
       ) : boards.isLoading || files.isLoading ? (
         <FullPageSpinner />
       ) : !board ? (
@@ -631,6 +633,53 @@ const TABS: { id: FolderTab; label: string; icon: typeof NotebookPen }[] = [
   { id: "code", label: "Code", icon: Code2 },
   { id: "links", label: "Links", icon: Link2 },
 ];
+
+function TabBar({ tabs, active, onSelect }: { tabs: typeof TABS; active: FolderTab; onSelect: (id: FolderTab) => void }) {
+  return (
+    <nav className="flex gap-1 border-b bg-card/40 px-3" aria-label="In this folder">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => onSelect(t.id)}
+          aria-current={active === t.id ? "page" : undefined}
+          className={cn(
+            "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] transition-colors",
+            active === t.id ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <t.icon className="size-3.5" /> {t.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+/** Notes, code and links saved at a workspace's top level, outside any folder. */
+export function WorkspaceTopLevel() {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const { sidebar, toggleSidebar } = useOutletContext<ShellContext>();
+  const workspaces = useWorkspaces();
+  const ws = workspaces.data?.find((w) => w.id === workspaceId);
+  const [params, setParams] = useSearchParams();
+  const tabs = TABS.filter((t) => t.id !== "notebook");
+  const tab = (tabs.some((t) => t.id === params.get("tab")) ? params.get("tab") : "notes") as FolderTab;
+  if (workspaces.isLoading) return <FullPageSpinner />;
+  if (!ws) return <EmptyState icon={FolderIcon} title="Workspace not found" description="It may have been deleted." className="m-8" />;
+  const place = { workspaceId: ws.id, folderId: null };
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="flex items-center gap-2 border-b bg-card/70 px-3 py-2 backdrop-blur">
+        <SidebarToggle sidebar={sidebar} onToggle={toggleSidebar} />
+        <WorkspaceIcon icon={ws.icon} color={ws.color} size="sm" />
+        <span className="truncate text-sm font-semibold">{ws.name}</span>
+        <span className="text-sm text-muted-foreground">· not in a folder</span>
+      </header>
+      <TabBar tabs={tabs} active={tab} onSelect={(id) => setParams({ tab: id })} />
+      {tab === "code" ? <FolderCode place={place} /> : tab === "links" ? <FolderLinks place={place} /> : <FolderNotes place={place} />}
+    </div>
+  );
+}
 
 /** The saved board as a PDF, pages stacked and sized to the window (capped for wide screens). */
 function BoardPdf({ url }: { url: string }) {

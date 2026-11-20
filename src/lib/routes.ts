@@ -18,6 +18,9 @@ const paths = {
   diagram: (id: string) => `/diagrams/${id}`,
   notebooks: (folderId?: string | null, opts?: { tab?: "notes" | "code" | "links" }) =>
     folderId ? `/notebooks/${folderId}${opts?.tab ? `?tab=${opts.tab}` : ""}` : "/notebooks",
+  /** Notes app: a workspace's notes, code and links that aren't in a folder. */
+  notesWorkspace: (workspaceId: string, opts?: { tab?: "notes" | "code" | "links" }) =>
+    `/notebooks/w/${workspaceId}${opts?.tab ? `?tab=${opts.tab}` : ""}`,
   dsa: (id: string) => `/dsa/${id}`,
   lld: (id: string) => `/lld/${id}`,
   book: (id: string) => `/books/${id}`,
@@ -38,7 +41,7 @@ const paths = {
 };
 
 type Paths = typeof paths;
-const NOTES_ROUTES = new Set<keyof Paths>(["diagram", "notebooks", "bookReader", "note", "snippet", "resources"]);
+const NOTES_ROUTES = new Set<keyof Paths>(["diagram", "notebooks", "notesWorkspace", "bookReader", "note", "snippet", "resources"]);
 
 /**
  * Addresses of every page. Notebooks, drawings, the book reader, typed notes, code snippets

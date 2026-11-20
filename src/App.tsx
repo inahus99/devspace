@@ -21,6 +21,7 @@ const DiagramPage = lazy(() => import("@/features/diagrams/DiagramPage"));
 const BookReaderPage = lazy(() => import("@/features/books/BookReaderPage"));
 const NotebooksApp = lazy(() => import("@/features/notebooks/NotebooksApp"));
 const NotesShell = lazy(() => import("@/features/notebooks/NotebooksApp").then((m) => ({ default: m.NotesShell })));
+const WorkspaceTopLevel = lazy(() => import("@/features/notebooks/NotebooksApp").then((m) => ({ default: m.WorkspaceTopLevel })));
 const NotesPage = lazy(() => import("@/features/notebooks/NotebooksApp").then((m) => ({ default: m.NotesPage })));
 const DsaProblemPage = lazy(() => import("@/features/dsa/DsaProblemPage"));
 const LldExercisePage = lazy(() => import("@/features/lld/LldExercisePage"));
@@ -111,6 +112,7 @@ const notesRoutes = [
             children: [
               { path: "notebooks", element: <NotebooksApp /> },
               { path: "notebooks/:folderId", element: <NotebooksApp /> },
+              { path: "notebooks/w/:workspaceId", element: <WorkspaceTopLevel /> },
               { path: "notes/:id", element: <NotesPage><NotePage /></NotesPage> },
               { path: "snippets/:id", element: <NotesPage><SnippetPage /></NotesPage> },
               { path: "resources", element: <NotesPage><ResourceLibraryPage /></NotesPage> },
@@ -143,6 +145,7 @@ const devspaceRoutes = [
                 children: [
                   { path: "notebooks", element: <NotebooksApp /> },
                   { path: "notebooks/:folderId", element: <NotebooksApp /> },
+                  { path: "notebooks/w/:workspaceId", element: <WorkspaceTopLevel /> },
                 ],
               },
         ],
