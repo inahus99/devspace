@@ -2,7 +2,7 @@ import "./excalidraw-setup";
 import "@excalidraw/excalidraw/index.css";
 import { Excalidraw, exportToBlob, getNonDeletedElements, MainMenu } from "@excalidraw/excalidraw";
 import type { AppState, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
-import { ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, MoveHorizontal, Star, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, Star, Trash2, ZoomIn } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import { api, ApiError, errorMessage } from "@/lib/api";
 import { useDelete, useDeleteAttachment, useFolders, useItem, useUpdate, useUpload, useWorkspaceMap } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { addPage, exportPdf, fitPageWidth, pdfFileName, saveBlob, startNotebook } from "./notebook";
+import { addPage, exportPdf, fitPageWidth, getWritingZoom, growPages, pdfFileName, saveBlob, setWritingZoom, startNotebook, WRITING_ZOOMS, type WritingZoom } from "./notebook";
 
 export default function DiagramPage() {
   const { id } = useParams();
@@ -67,13 +67,21 @@ const pdfLabel = (diagramId: string) => `diagram-pdf:${diagramId}`;
 export function DiagramEditor({
   diagram,
   embedded,
+  variant: variantProp,
   onReady,
+  onDone,
 }: {
   diagram: Diagram;
   /** Compact header for use beside the book reader. */
   embedded?: boolean;
+  /** "board": a folder's notebook in the Notebooks app, with Done (save as PDF) instead of a title bar. */
+  variant?: "page" | "embedded" | "board";
   onReady?: (api: ExcalidrawImperativeAPI) => void;
+  /** Board only: called after Done has saved the drawing and its PDF. */
+  onDone?: () => void;
 }) {
+  const variant = variantProp ?? (embedded ? "embedded" : "page");
+  const compact = variant !== "page";
   const update = useUpdate("diagrams", { silent: true });
   const del = useDelete("diagrams");
   const upload = useUpload();
@@ -150,7 +158,7 @@ export function DiagramEditor({
     del.mutate(diagram.id, { onSuccess: () => navigate(backTo) });
   };
 
-  const pdf = async (mode: "save" | "download") => {
+  const pdf = async (mode: "save" | "download", opts?: { quiet?: boolean }) => {
     if (!draw.current) return;
     setExporting(true);
     try {
@@ -167,16 +175,58 @@ export function DiagramEditor({
         target: { workspaceId: diagram.workspaceId, folderId: diagram.folderId, label },
       });
       for (const a of previous) await delAttachment.mutateAsync(a.id).catch(() => {});
+      if (opts?.quiet) return;
       toast.success(`Saved “${name}” (${pages} page${pages === 1 ? "" : "s"}) to ${folder?.name ?? ws?.name ?? "the workspace"}`, {
         description: previous.length ? "Replaced the previous export." : undefined,
         action: { label: "Download", onClick: () => window.location.assign(`${saved.url}?download=1`) },
       });
     } catch (err) {
       toast.error(`Couldn't create the PDF: ${errorMessage(err)}`);
+      throw err;
     } finally {
       setExporting(false);
     }
   };
+
+  /** Board: save the drawing, render it to the folder's PDF, then switch back to reading. */
+  const done = async () => {
+    await autosave.flush();
+    if (draw.current && getNonDeletedElements(draw.current.getSceneElements()).some((e) => e.type !== "frame")) {
+      try {
+        await pdf("save", { quiet: true });
+      } catch {
+        return; // stay in edit mode; the error toast explains
+      }
+    }
+    onDone?.();
+  };
+
+  const [zoomPref, setZoomPref] = useState<WritingZoom>(getWritingZoom);
+  const zoomMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 tabular" title="Writing zoom">
+          <ZoomIn /> {zoomPref === "fit" ? "Fit" : `${Math.round(zoomPref * 100)}%`}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        {WRITING_ZOOMS.map((z) => (
+          <DropdownMenuItem
+            key={String(z)}
+            onSelect={() => {
+              setZoomPref(z);
+              setWritingZoom(z);
+              if (draw.current) fitPageWidth(draw.current, null, { zoom: z });
+            }}
+            className={cn(z === zoomPref && "font-semibold text-primary")}
+          >
+            {z === "fit" ? "Fit page width" : `${Math.round(z * 100)}%`}
+            {z === 1.75 ? <span className="ml-auto text-2xs text-muted-foreground">small tablets</span> : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   const pdfMenu = (
     <DropdownMenu>
@@ -198,8 +248,8 @@ export function DiagramEditor({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-card/70 backdrop-blur", embedded ? "px-3 py-1.5" : "px-4 py-2 sm:px-6")}>
-        {embedded ? null : (
+      <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-card/70 backdrop-blur", compact ? "px-3 py-1.5" : "px-4 py-2 sm:px-6")}>
+        {compact ? null : (
           <nav className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" aria-label="Breadcrumb">
             {ws ? (
               <Link to={routes.workspace(ws.id)} className="flex shrink-0 items-center gap-1.5 hover:text-foreground">
@@ -218,6 +268,9 @@ export function DiagramEditor({
             <ChevronRight className="size-3 shrink-0" />
           </nav>
         )}
+        {variant === "board" ? (
+          <span className="flex-1 text-xs text-muted-foreground">Editing · saves as you write</span>
+        ) : (
         <input
           value={title}
           onChange={(e) => {
@@ -228,23 +281,19 @@ export function DiagramEditor({
           placeholder="Untitled"
           className="min-w-32 flex-1 bg-transparent text-sm font-semibold outline-none"
         />
+        )}
         <div className="flex items-center gap-1">
           <SaveIndicator status={autosave.status} onRetry={() => void autosave.flush()} className="mr-1" />
           <Button variant="ghost" size="sm" className="h-8" onClick={() => draw.current && addPage(draw.current)} title="Add an A4 page below the last one">
             <FilePlus2 /> Page
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={() => draw.current && fitPageWidth(draw.current)}
-            aria-label="Fit page to width"
-            title="Fit page to width (writing size)"
-          >
-            <MoveHorizontal />
-          </Button>
+          {zoomMenu}
           {pdfMenu}
-          {embedded ? (
+          {variant === "board" ? (
+            <Button size="sm" className="h-8" onClick={() => void done()} disabled={exporting}>
+              {exporting ? <Loader2 className="animate-spin" /> : <Check />} Done
+            </Button>
+          ) : variant === "embedded" ? (
             <Button variant="ghost" size="icon" className="size-8" asChild>
               <Link to={routes.diagram(diagram.id)} aria-label="Open full screen" title="Open full screen">
                 <ExternalLink />
@@ -282,7 +331,7 @@ export function DiagramEditor({
             seeded.current = true;
             // Excalidraw may hand over a new API instance (e.g. remounts in development) and
             // loads the saved scene a moment later, so act on the latest instance once ready.
-            const fresh = (embedded || params.get("notebook") === "1") && !diagram.scene.elements.length;
+            const fresh = (variant !== "page" || params.get("notebook") === "1") && !diagram.scene.elements.length;
             if (fresh && params.has("notebook")) setParams((p) => (p.delete("notebook"), p), { replace: true });
             let tries = 0;
             const attempt = () => {
@@ -315,6 +364,9 @@ export function DiagramEditor({
             if (sig === lastSig.current) return;
             lastSig.current = sig;
             autosave.schedule({ _scene: true });
+            // Endless notebook: a new page appears as writing reaches the bottom of the last one.
+            // Checked between strokes, not on every pen movement.
+            if (draw.current && !appState.newElement && appState.activeTool.type !== "selection") growPages(draw.current);
           }}
           UIOptions={{ canvasActions: { loadScene: true, saveToActiveFile: false, export: { saveFileToDisk: true } } }}
         >

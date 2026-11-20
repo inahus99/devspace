@@ -811,7 +811,7 @@ function DiagramsSection({
             {sorted.map((d) => (
               <Link
                 key={d.id}
-                to={routes.diagram(d.id)}
+                to={d.kind === "board" && d.folderId ? routes.notebooks(d.folderId) : routes.diagram(d.id)}
                 className="group overflow-hidden rounded-lg border bg-background transition-[border-color,box-shadow] hover:border-primary/30 hover:shadow-pop"
               >
                 <div className="flex aspect-[16/10] items-center justify-center overflow-hidden border-b bg-white">

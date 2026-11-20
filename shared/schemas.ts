@@ -148,6 +148,7 @@ export const diagramCreateSchema = z.object({
   workspaceId: zId,
   folderId: zOptId,
   bookId: zOptId,
+  kind: z.enum(["drawing", "board"]).optional(),
   title: z.string().trim().min(1, "Title is required").max(300),
   scene: zDiagramScene.optional(),
   preview: z

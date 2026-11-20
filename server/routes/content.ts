@@ -71,7 +71,10 @@ export const diagramsRouter = crudRouter({
   createSchema: diagramCreateSchema,
   updateSchema: diagramUpdateSchema,
   searchColumns: [diagrams.title],
-  filters: (req) => [qs(req, "bookId") ? eq(diagrams.bookId, qs(req, "bookId")!) : undefined],
+  filters: (req) => [
+    qs(req, "bookId") ? eq(diagrams.bookId, qs(req, "bookId")!) : undefined,
+    qs(req, "kind") === "board" || qs(req, "kind") === "drawing" ? eq(diagrams.kind, qs(req, "kind") as "board" | "drawing") : undefined,
+  ],
   sortable: { updated: diagrams.updatedAt, created: diagrams.createdAt, title: diagrams.title },
   defaultSort: "updated",
   // Lists carry the thumbnail but not the (possibly image-heavy) scene.
@@ -81,6 +84,7 @@ export const diagramsRouter = crudRouter({
     workspaceId: diagrams.workspaceId,
     folderId: diagrams.folderId,
     bookId: diagrams.bookId,
+    kind: diagrams.kind,
     title: diagrams.title,
     preview: diagrams.preview,
     isFavorite: diagrams.isFavorite,

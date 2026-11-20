@@ -63,12 +63,35 @@ export function addPage(api: ExcalidrawImperativeAPI, opts?: { scroll?: boolean 
   return frame as Frame;
 }
 
+/** Preferred zoom while writing: "fit" (page width fills the screen) or a fixed level. */
+export type WritingZoom = "fit" | number;
+const ZOOM_KEY = "devspace.writingZoom";
+export const WRITING_ZOOMS: WritingZoom[] = ["fit", 1, 1.25, 1.5, 1.75, 2, 2.5];
+
+export function getWritingZoom(): WritingZoom {
+  try {
+    const v = localStorage.getItem(ZOOM_KEY);
+    const n = Number(v);
+    return v && v !== "fit" && n >= 0.25 && n <= 4 ? n : "fit";
+  } catch {
+    return "fit";
+  }
+}
+export function setWritingZoom(z: WritingZoom) {
+  try {
+    localStorage.setItem(ZOOM_KEY, String(z));
+  } catch {
+    /* a per-browser convenience only */
+  }
+}
+
 /**
- * Zooms so a page fills the width of the screen (like a notebook app) and shows its top,
- * a comfortable size for handwriting; you scroll down the page as you write. Without
- * pages, it fits the whole drawing instead. Zoom only changes the view, never the PDF.
+ * Shows a page at writing size: by default it fills the screen width (like a notebook app)
+ * with its top in view, and you scroll down as you write. A fixed writing zoom (e.g. 175%
+ * for a small pen tablet) keeps the page's left margin in view instead. Without pages it
+ * fits the whole drawing. Zoom only changes the view, never the PDF.
  */
-export function fitPageWidth(api: ExcalidrawImperativeAPI, page?: Frame | null, opts?: { keepY?: boolean }) {
+export function fitPageWidth(api: ExcalidrawImperativeAPI, page?: Frame | null, opts?: { keepY?: boolean; zoom?: WritingZoom }) {
   const f = page ?? currentPage(api);
   if (!f) {
     api.scrollToContent(undefined, { fitToViewport: true, viewportZoomFactor: 0.9 });
@@ -76,20 +99,36 @@ export function fitPageWidth(api: ExcalidrawImperativeAPI, page?: Frame | null, 
   }
   const s = api.getAppState();
   if (!s.width) return;
-  const zoom = Math.min(Math.max((s.width - 40) / f.width, 0.1), 3);
-  // Screen x = (sceneX + scrollX) * zoom: centre the page, top edge 16px below the toolbar area.
-  const scrollX = (s.width / zoom - f.width) / 2 - f.x;
+  const pref = opts?.zoom ?? getWritingZoom();
+  const fit = (s.width - 40) / f.width;
+  const zoom = Math.min(Math.max(pref === "fit" ? fit : pref, 0.1), 4);
+  // Screen x = (sceneX + scrollX) * zoom.
+  const scrollX = f.width * zoom <= s.width - 40 ? (s.width / zoom - f.width) / 2 - f.x : 24 / zoom - f.x;
   const scrollY = opts?.keepY ? s.scrollY : 72 / zoom - f.y;
   api.updateScene({ appState: { zoom: { value: zoom as AppState["zoom"]["value"] }, scrollX, scrollY } });
 }
 
-/** Notebook defaults on open: page width fills the screen and the pencil is ready. */
+/** Notebook defaults on open: writing-size view and the pencil ready. */
 export function startNotebook(api: ExcalidrawImperativeAPI) {
   const s = api.getAppState();
   // Wait until Excalidraw has finished loading the saved scene, which resets the view.
   if (s.isLoading || !s.width || !pageFrames(api).length) return false;
   fitPageWidth(api, pageFrames(api)[0]);
   api.setActiveTool({ type: "freedraw" });
+  return true;
+}
+
+/** Adds the next page once writing gets close to the bottom of the last one. */
+export function growPages(api: ExcalidrawImperativeAPI) {
+  const frames = pageFrames(api);
+  const last = frames[frames.length - 1];
+  if (!last) return false;
+  const limit = last.y + last.height - 160;
+  const near = getNonDeletedElements(api.getSceneElements()).some(
+    (e) => e.type !== "frame" && e.y + e.height > limit && e.y < last.y + last.height + 40 && e.x < last.x + last.width && e.x + e.width > last.x,
+  );
+  if (!near) return false;
+  addPage(api, { scroll: false });
   return true;
 }
 

@@ -308,6 +308,8 @@ export const diagrams = pgTable(
     folderId: uuid("folder_id").references(() => folders.id, { onDelete: "set null" }),
     /** Set for a notebook kept alongside a book (opened next to the PDF reader). */
     bookId: uuid("book_id").references(() => books.id, { onDelete: "set null" }),
+    /** "board": a folder's notebook in the Notebooks app (at most one per folder). */
+    kind: text("kind", { enum: ["drawing", "board"] }).notNull().default("drawing"),
     title: text("title").notNull(),
     scene: jsonb("scene").$type<DiagramScene>().notNull().default({ elements: [] }),
     /** Small WebP data URL rendered from the scene, for cards and lists. */
@@ -319,6 +321,8 @@ export const diagrams = pgTable(
   (t) => [
     index("diagrams_user_updated_idx").on(t.userId, t.updatedAt),
     index("diagrams_book_idx").on(t.bookId),
+    uniqueIndex("diagrams_board_folder_idx").on(t.folderId).where(sql`${t.kind} = 'board'`),
+    check("diagrams_kind_valid", sql`${t.kind} in ('drawing', 'board')`),
     index("diagrams_workspace_folder_idx").on(t.workspaceId, t.folderId),
   ],
 );

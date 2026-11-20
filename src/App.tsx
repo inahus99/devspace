@@ -18,6 +18,7 @@ const NotePage = lazy(() => import("@/features/notes/NotePage"));
 const SnippetPage = lazy(() => import("@/features/snippets/SnippetPage"));
 const DiagramPage = lazy(() => import("@/features/diagrams/DiagramPage"));
 const BookReaderPage = lazy(() => import("@/features/books/BookReaderPage"));
+const NotebooksApp = lazy(() => import("@/features/notebooks/NotebooksApp"));
 const DsaProblemPage = lazy(() => import("@/features/dsa/DsaProblemPage"));
 const LldExercisePage = lazy(() => import("@/features/lld/LldExercisePage"));
 const ResourceLibraryPage = lazy(() => import("@/features/resources/ResourceLibraryPage"));
@@ -42,6 +43,19 @@ function RequireAuth() {
   );
 }
 
+/** Signed-in pages that bring their own full-screen layout (the Notebooks app). */
+function RequireAuthBare() {
+  const { data: user, isLoading } = useMe();
+  const location = useLocation();
+  if (isLoading) return <FullPageSpinner />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  return (
+    <Suspense fallback={<FullPageSpinner />}>
+      <Outlet />
+    </Suspense>
+  );
+}
+
 function Root() {
   const qc = useQueryClient();
   useEffect(() => {
@@ -63,6 +77,13 @@ const router = createBrowserRouter([
     element: <Root />,
     children: [
       { path: "/login", element: <LoginPage /> },
+      {
+        element: <RequireAuthBare />,
+        children: [
+          { path: "notebooks", element: <NotebooksApp /> },
+          { path: "notebooks/:folderId", element: <NotebooksApp /> },
+        ],
+      },
       {
         element: <RequireAuth />,
         children: [
