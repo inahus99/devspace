@@ -1,4 +1,5 @@
-import { BookOpen, BookOpenText, ChevronDown, PenLine, Plus, Shapes } from "lucide-react";
+import { BookOpen, BookOpenText, ChevronDown, Code2, ExternalLink, FileText, PenLine, Plus, Shapes } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
 import type { DiagramSummary, Folder, Workspace } from "@shared/types";
@@ -6,6 +7,9 @@ import { Spinner } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BOOK_FILE_LABEL } from "@/features/books/bookFile";
+import { NoteCreateDialog } from "@/features/notes/NoteCreateDialog";
+import { SnippetDialog } from "@/features/snippets/SnippetDialog";
+import { AddLinkForm } from "./AddLinkForm";
 import { timeAgo } from "@/lib/dates";
 import { useAttachments, useCreate, useList } from "@/lib/queries";
 import { routes } from "@/lib/routes";
@@ -163,5 +167,139 @@ export function FolderDrawingsMenu({ folder }: { folder: Folder }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// A folder's typed notes, code snippets and links (tabs beside its notebook)
+// ---------------------------------------------------------------------------
+
+function TabBody({ action, loading, empty, children }: { action: React.ReactNode; loading: boolean; empty: string | null; children: React.ReactNode }) {
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+        <div className="mb-4 flex justify-end">{action}</div>
+        {loading ? <Spinner /> : empty ? <p className="py-10 text-center text-sm text-muted-foreground">{empty}</p> : children}
+      </div>
+    </div>
+  );
+}
+
+export function FolderNotes({ folder }: { folder: Folder }) {
+  const notes = useList("notes", { workspaceId: folder.workspaceId, folderId: folder.id });
+  const [open, setOpen] = useState(false);
+  const list = [...(notes.data ?? [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return (
+    <TabBody
+      loading={notes.isLoading}
+      empty={list.length ? null : "No typed notes in this folder yet."}
+      action={
+        <>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus /> New note
+          </Button>
+          <NoteCreateDialog open={open} onOpenChange={setOpen} defaults={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
+        </>
+      }
+    >
+      <ul className="divide-y rounded-xl border bg-card shadow-soft">
+        {list.map((n) => (
+          <li key={n.id}>
+            <Link to={routes.note(n.id)} className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50">
+              <FileText className="mt-0.5 size-4 shrink-0 text-primary" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{n.title || "Untitled"}</span>
+                {n.excerpt ? <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{n.excerpt}</span> : null}
+              </span>
+              <span className="shrink-0 text-2xs text-muted-foreground">{timeAgo(n.updatedAt)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </TabBody>
+  );
+}
+
+export function FolderCode({ folder }: { folder: Folder }) {
+  const snippets = useList("snippets", { workspaceId: folder.workspaceId, folderId: folder.id });
+  const [open, setOpen] = useState(false);
+  const list = [...(snippets.data ?? [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return (
+    <TabBody
+      loading={snippets.isLoading}
+      empty={list.length ? null : "No code snippets in this folder yet."}
+      action={
+        <>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus /> New snippet
+          </Button>
+          <SnippetDialog open={open} onOpenChange={setOpen} defaults={{ workspaceId: folder.workspaceId, folderId: folder.id }} />
+        </>
+      }
+    >
+      <div className="space-y-3">
+        {list.map((s) => (
+          <Link key={s.id} to={routes.snippet(s.id)} className="block overflow-hidden rounded-xl border bg-card shadow-soft hover:border-primary/30">
+            <span className="flex items-center justify-between gap-2 border-b px-4 py-2">
+              <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                <Code2 className="size-4 shrink-0 text-primary" />
+                <span className="truncate">{s.title}</span>
+              </span>
+              <span className="shrink-0 text-2xs text-muted-foreground">{s.language}</span>
+            </span>
+            <pre className="max-h-40 overflow-hidden bg-muted/40 px-4 py-3 font-mono text-xs leading-relaxed">{s.code.split("\n").slice(0, 10).join("\n")}</pre>
+          </Link>
+        ))}
+      </div>
+    </TabBody>
+  );
+}
+
+export function FolderLinks({ folder }: { folder: Folder }) {
+  const links = useList("resources", { workspaceId: folder.workspaceId, folderId: folder.id });
+  const create = useCreate("resources");
+  const list = [...(links.data ?? [])].sort((a, b) => a.title.localeCompare(b.title));
+  return (
+    <TabBody
+      loading={links.isLoading}
+      empty={null}
+      action={
+        <div className="w-full max-w-md">
+          <AddLinkForm
+            pending={create.isPending}
+            onAdd={async (url) => {
+              let title = url;
+              try {
+                title = new URL(url).hostname.replace(/^www\./, "");
+              } catch {
+                /* the server validates the address */
+              }
+              const r = await create.mutateAsync({ workspaceId: folder.workspaceId, folderId: folder.id, title, url }).catch(() => null);
+              return !!r;
+            }}
+          />
+        </div>
+      }
+    >
+      {list.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">No links in this folder yet. Paste one above.</p>
+      ) : (
+        <ul className="divide-y rounded-xl border bg-card shadow-soft">
+          {list.map((r) => (
+            <li key={r.id}>
+              <a href={r.url} target="_blank" rel="noreferrer noopener" className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50">
+                <ExternalLink className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{r.title}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{r.url.replace(/^https?:\/\//, "")}</span>
+                  {r.description ? <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{r.description}</span> : null}
+                </span>
+                <span className="shrink-0 text-2xs text-muted-foreground">{r.type}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </TabBody>
   );
 }

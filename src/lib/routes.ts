@@ -16,7 +16,8 @@ const paths = {
   note: (id: string) => `/notes/${id}`,
   snippet: (id: string) => `/snippets/${id}`,
   diagram: (id: string) => `/diagrams/${id}`,
-  notebooks: (folderId?: string | null) => (folderId ? `/notebooks/${folderId}` : "/notebooks"),
+  notebooks: (folderId?: string | null, opts?: { tab?: "notes" | "code" | "links" }) =>
+    folderId ? `/notebooks/${folderId}${opts?.tab ? `?tab=${opts.tab}` : ""}` : "/notebooks",
   dsa: (id: string) => `/dsa/${id}`,
   lld: (id: string) => `/lld/${id}`,
   book: (id: string) => `/books/${id}`,
@@ -37,10 +38,11 @@ const paths = {
 };
 
 type Paths = typeof paths;
-const NOTES_ROUTES = new Set<keyof Paths>(["diagram", "notebooks", "bookReader"]);
+const NOTES_ROUTES = new Set<keyof Paths>(["diagram", "notebooks", "bookReader", "note", "snippet", "resources"]);
 
 /**
- * Addresses of every page. Notebooks, drawings and the book reader belong to the Notes app
+ * Addresses of every page. Notebooks, drawings, the book reader, typed notes, code snippets
+ * and the links library belong to the Notes app
  * and everything else to DevSpace; when the two run separately, a route that belongs to the
  * other app comes back as its full URL (react-router's Link handles those as normal links).
  */

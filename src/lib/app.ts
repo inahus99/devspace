@@ -31,3 +31,20 @@ export function goTo(navigate: (to: string, opts?: { replace?: boolean }) => voi
   if (opts?.replace) window.location.replace(href);
   else window.location.assign(href);
 }
+
+/** Notes app, signed out: whether it can sign in through DevSpace (single sign-on). */
+export function canSingleSignOn() {
+  return isNotesApp && !!DEVSPACE_URL && new URLSearchParams(window.location.search).get("sso") !== "failed";
+}
+
+/** Goes to DevSpace to sign in, then comes back here signed in (see server/auth.ts). */
+export function startSingleSignOn() {
+  const here = new URL(window.location.href);
+  if (here.pathname === "/login") here.pathname = "/";
+  here.searchParams.delete("sso");
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  const state = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `ds_sso_state=${state}; Path=/; Max-Age=300; SameSite=Lax${secure}`;
+  window.location.assign(`${DEVSPACE_URL}/api/auth/sso/start?return=${encodeURIComponent(here.toString())}&state=${state}`);
+}

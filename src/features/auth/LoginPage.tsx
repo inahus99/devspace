@@ -25,8 +25,16 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
+  const params = new URLSearchParams(location.search);
+  // Signing in for the Notes app: carry on with single sign-on afterwards (a server route).
+  const ssoNext = params.get("next")?.startsWith("/api/auth/sso/start?") ? params.get("next")! : null;
+  const ssoFailed = params.get("sso") === "failed";
 
   if (isLoading) return <FullPageSpinner />;
+  if (me && ssoNext) {
+    window.location.replace(ssoNext);
+    return <FullPageSpinner />;
+  }
   if (me) return <Navigate to={from} replace />;
 
   // First visit to an empty instance → create the owner account.
@@ -45,6 +53,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const { user } = await api.post<{ user: User }>(effective === "login" ? "/auth/login" : "/auth/register", parsed.data);
+      if (ssoNext) return window.location.replace(ssoNext);
       qc.setQueryData(["me"], user);
       navigate(from, { replace: true });
     } catch (err) {
@@ -85,6 +94,10 @@ export function LoginPage() {
           {formError ? (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
               {formError}
+            </p>
+          ) : ssoFailed ? (
+            <p className="rounded-md bg-warning/10 px-3 py-2 text-sm" role="status">
+              Couldn't sign you in through DevSpace automatically. Sign in here instead.
             </p>
           ) : null}
           <Button type="submit" className="w-full" disabled={submitting}>

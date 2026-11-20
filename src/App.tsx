@@ -9,7 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { ThemeSync } from "@/hooks/useTheme";
 import { setUnauthorizedHandler } from "@/lib/api";
-import { devspaceHref, isExternalHref, isNotesApp, notesHref, notesSeparate } from "@/lib/app";
+import { devspaceHref, isExternalHref, isNotesApp, notesHref, notesSeparate, canSingleSignOn, startSingleSignOn } from "@/lib/app";
 import { useMe } from "@/lib/queries";
 
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage"));
@@ -20,6 +20,8 @@ const SnippetPage = lazy(() => import("@/features/snippets/SnippetPage"));
 const DiagramPage = lazy(() => import("@/features/diagrams/DiagramPage"));
 const BookReaderPage = lazy(() => import("@/features/books/BookReaderPage"));
 const NotebooksApp = lazy(() => import("@/features/notebooks/NotebooksApp"));
+const NotesShell = lazy(() => import("@/features/notebooks/NotebooksApp").then((m) => ({ default: m.NotesShell })));
+const NotesPage = lazy(() => import("@/features/notebooks/NotebooksApp").then((m) => ({ default: m.NotesPage })));
 const DsaProblemPage = lazy(() => import("@/features/dsa/DsaProblemPage"));
 const LldExercisePage = lazy(() => import("@/features/lld/LldExercisePage"));
 const ResourceLibraryPage = lazy(() => import("@/features/resources/ResourceLibraryPage"));
@@ -48,7 +50,12 @@ function RequireAuth() {
 function RequireAuthBare() {
   const { data: user, isLoading } = useMe();
   const location = useLocation();
-  if (isLoading) return <FullPageSpinner />;
+  // The Notes app signs in through DevSpace (single sign-on) when it can.
+  const sso = !isLoading && !user && canSingleSignOn();
+  useEffect(() => {
+    if (sso) startSingleSignOn();
+  }, [sso]);
+  if (isLoading || sso) return <FullPageSpinner />;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return (
     <Suspense fallback={<FullPageSpinner />}>
@@ -98,8 +105,17 @@ const notesRoutes = [
         element: <RequireAuthBare />,
         children: [
           { index: true, element: <Navigate to="/notebooks" replace /> },
-          { path: "notebooks", element: <NotebooksApp /> },
-          { path: "notebooks/:folderId", element: <NotebooksApp /> },
+          {
+            // Folders on the left; notebooks, notes, code and links on the right.
+            element: <NotesShell />,
+            children: [
+              { path: "notebooks", element: <NotebooksApp /> },
+              { path: "notebooks/:folderId", element: <NotebooksApp /> },
+              { path: "notes/:id", element: <NotesPage><NotePage /></NotesPage> },
+              { path: "snippets/:id", element: <NotesPage><SnippetPage /></NotesPage> },
+              { path: "resources", element: <NotesPage><ResourceLibraryPage /></NotesPage> },
+            ],
+          },
           { path: "diagrams/:id", element: <Screen><DiagramPage /></Screen> },
           { path: "books/:id/read", element: <Screen><BookReaderPage /></Screen> },
           { path: "*", element: <OtherApp to="devspace" /> },
@@ -120,8 +136,15 @@ const devspaceRoutes = [
       {
         element: <RequireAuthBare />,
         children: [
-          { path: "notebooks", element: notesSeparate ? toNotes : <NotebooksApp /> },
-          { path: "notebooks/:folderId", element: notesSeparate ? toNotes : <NotebooksApp /> },
+          notesSeparate
+            ? { path: "notebooks/*", element: toNotes }
+            : {
+                element: <NotesShell />,
+                children: [
+                  { path: "notebooks", element: <NotebooksApp /> },
+                  { path: "notebooks/:folderId", element: <NotebooksApp /> },
+                ],
+              },
         ],
       },
       {
@@ -130,12 +153,12 @@ const devspaceRoutes = [
           { index: true, element: <DashboardPage /> },
           { path: "workspaces", element: <WorkspacesPage /> },
           { path: "w/:id", element: <WorkspacePage /> },
-          { path: "notes/:id", element: <NotePage /> },
-          { path: "snippets/:id", element: <SnippetPage /> },
+          { path: "notes/:id", element: notesSeparate ? toNotes : <NotePage /> },
+          { path: "snippets/:id", element: notesSeparate ? toNotes : <SnippetPage /> },
           { path: "diagrams/:id", element: notesSeparate ? toNotes : <DiagramPage /> },
           { path: "dsa/:id", element: <DsaProblemPage /> },
           { path: "lld/:id", element: <LldExercisePage /> },
-          { path: "resources", element: <ResourceLibraryPage /> },
+          { path: "resources", element: notesSeparate ? toNotes : <ResourceLibraryPage /> },
           { path: "books", element: <BookshelfPage /> },
           { path: "books/:id", element: <BookPage /> },
           { path: "books/:id/read", element: notesSeparate ? toNotes : <BookReaderPage /> },

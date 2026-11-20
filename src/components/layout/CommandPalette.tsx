@@ -20,6 +20,7 @@ import {
 import { useTheme } from "@/hooks/useTheme";
 import { useSearch, useWorkspaces } from "@/lib/queries";
 import { contentHref, routes } from "@/lib/routes";
+import { goTo } from "@/lib/app";
 import { type CaptureKind, useUi } from "@/stores/ui";
 
 const TYPE_META: Record<SearchResultType, { label: string; icon: typeof FileText }> = {
@@ -80,7 +81,7 @@ export function CommandPalette() {
 
   const go = (to: string) => {
     setOpen(false);
-    navigate(to);
+    goTo(navigate, to);
   };
 
   const term = q.trim().toLowerCase();

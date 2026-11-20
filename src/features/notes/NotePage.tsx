@@ -25,6 +25,7 @@ import { ApiError, downloadUrl, errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/dates";
 import { uploadFile, useDelete, useItem, useList, useUpdate, useWorkspaceFolders, useWorkspaceMap } from "@/lib/queries";
 import { routes } from "@/lib/routes";
+import { goTo, isNotesApp } from "@/lib/app";
 import { cn } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
 
@@ -161,7 +162,8 @@ function NoteEditor({ note }: { note: Note }) {
 
   const remove = async () => {
     if (!(await confirm({ title: "Delete this note?", description: "The note and its attached images and files are permanently deleted.", destructive: true }))) return;
-    del.mutate(note.id, { onSuccess: () => navigate(routes.workspace(note.workspaceId, { tab: "notes", folder: note.folderId })) });
+    const back = isNotesApp ? routes.notebooks(note.folderId, { tab: "notes" }) : routes.workspace(note.workspaceId, { tab: "notes", folder: note.folderId });
+    del.mutate(note.id, { onSuccess: () => goTo(navigate, back) });
   };
 
   return (
@@ -170,7 +172,7 @@ function NoteEditor({ note }: { note: Note }) {
       <div className="flex flex-wrap items-center justify-between gap-2 pb-6 text-xs text-muted-foreground">
         <nav className="flex min-w-0 items-center gap-1" aria-label="Breadcrumb">
           {workspace ? (
-            <Link to={routes.workspace(workspace.id, { tab: "notes" })} className="flex items-center gap-1.5 hover:text-foreground">
+            <Link to={isNotesApp ? routes.notebooks() : routes.workspace(workspace.id, { tab: "notes" })} className="flex items-center gap-1.5 hover:text-foreground">
               <WorkspaceIcon icon={workspace.icon} color={workspace.color} size="sm" />
               {workspace.name}
             </Link>
@@ -178,7 +180,10 @@ function NoteEditor({ note }: { note: Note }) {
           {folderPath.map((f) => (
             <span key={f.id} className="flex min-w-0 items-center gap-1">
               <ChevronRight className="size-3 shrink-0" />
-              <Link to={routes.workspace(note.workspaceId, { tab: "notes", folder: f.id })} className="truncate hover:text-foreground">
+              <Link
+                to={isNotesApp ? routes.notebooks(f.id, { tab: "notes" }) : routes.workspace(note.workspaceId, { tab: "notes", folder: f.id })}
+                className="truncate hover:text-foreground"
+              >
                 {f.name}
               </Link>
             </span>

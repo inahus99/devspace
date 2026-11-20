@@ -1,6 +1,6 @@
-import { ArrowLeft, ChevronRight, Download, Folder as FolderIcon, FolderPlus, Loader2, NotebookPen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, TriangleAlert, X } from "lucide-react";
-import { type FormEvent, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { ArrowLeft, ChevronRight, Code2, Download, FileText, Folder as FolderIcon, Home as HomeIcon, Link2, FolderPlus, Loader2, NotebookPen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, TriangleAlert, X } from "lucide-react";
+import { type FormEvent, lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useMatch, useNavigate, useOutletContext, useParams, useSearchParams } from "react-router";
 import type { DiagramSummary, Folder, Workspace } from "@shared/types";
 import { EmptyState, ErrorState, FullPageSpinner, Spinner } from "@/components/common/states";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
@@ -12,7 +12,7 @@ import { useAttachments, useCreate, useCreateFolder, useFolders, useList, useWor
 import { isNotesApp } from "@/lib/app";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-import { BooksSection, DrawingsSection, FolderDrawingsMenu } from "./Library";
+import { BooksSection, DrawingsSection, FolderCode, FolderDrawingsMenu, FolderLinks, FolderNotes } from "./Library";
 
 // Excalidraw (~2 MB) loads only when a board is opened for editing.
 const BoardEditor = lazy(() => import("./BoardEditor"));
@@ -35,13 +35,15 @@ function store(key: string, value: unknown) {
   }
 }
 
+type ShellContext = { sidebar: boolean; toggleSidebar: () => void };
+
 /**
- * Notebooks: a GoodNotes-style app inside DevSpace. Folders and sub-folders on the left
- * (the same workspaces and folders as DevSpace), and each folder holds one long board you
- * write on with a pen. A saved board opens as its PDF; Edit turns it back into the board.
+ * The Notes app's layout: folders and sub-folders on the left (the same workspaces and folders
+ * as DevSpace), and the page on the right: a folder's notebook, notes, code and links, or a
+ * single note, snippet or the links library.
  */
-export default function NotebooksApp() {
-  const { folderId } = useParams<{ folderId?: string }>();
+export function NotesShell() {
+  const selected = useMatch("/notebooks/:folderId")?.params.folderId ?? null;
   const workspaces = useWorkspaces();
   const folders = useFolders();
   const boards = useList("diagrams", { kind: "board" });
@@ -70,7 +72,11 @@ export default function NotebooksApp() {
   }, []);
 
   const boardByFolder = useMemo(() => new Map((boards.data ?? []).filter((b) => b.folderId).map((b) => [b.folderId!, b])), [boards.data]);
-  const folder = folderId ? folders.data?.find((f) => f.id === folderId) : undefined;
+  const navLink = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors hover:bg-accent",
+      isActive ? "bg-accent font-medium text-primary" : "text-muted-foreground hover:text-foreground",
+    );
 
   return (
     <div className="flex h-dvh min-h-0 bg-background text-foreground">
@@ -79,7 +85,7 @@ export default function NotebooksApp() {
           "flex w-72 shrink-0 flex-col border-r bg-sidebar transition-[margin] duration-200",
           sidebar ? "ml-0" : "-ml-72",
         )}
-        aria-label="Notebook folders"
+        aria-label="Notes navigation"
         aria-hidden={!sidebar}
       >
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
@@ -93,12 +99,20 @@ export default function NotebooksApp() {
             <PanelLeftClose />
           </Button>
         </div>
+        <nav className="space-y-0.5 px-2 pb-2" aria-label="Notes">
+          <NavLink to="/notebooks" end className={navLink}>
+            <HomeIcon className="size-4" /> Home
+          </NavLink>
+          <NavLink to={routes.resources()} className={navLink}>
+            <Link2 className="size-4" /> All links
+          </NavLink>
+        </nav>
         {workspaces.isLoading || folders.isLoading ? (
           <div className="p-4">
             <Spinner />
           </div>
         ) : (
-          <FolderTree workspaces={workspaces.data ?? []} folders={folders.data ?? []} boards={boardByFolder} selected={folderId ?? null} />
+          <FolderTree workspaces={workspaces.data ?? []} folders={folders.data ?? []} boards={boardByFolder} selected={selected} />
         )}
         <div className="border-t p-2">
           <Link to={routes.dashboard()} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
@@ -108,20 +122,43 @@ export default function NotebooksApp() {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        {folderId ? (
-          folders.isLoading ? (
-            <FullPageSpinner />
-          ) : folder ? (
-            <Board key={folder.id} folder={folder} workspace={workspaces.data?.find((w) => w.id === folder.workspaceId)} folders={folders.data ?? []} sidebar={sidebar} onToggleSidebar={toggleSidebar} />
-          ) : (
-            <EmptyState icon={FolderIcon} title="Folder not found" description="It may have been deleted." className="m-8" />
-          )
-        ) : (
-          <Home boards={boards.data ?? []} loading={boards.isLoading} folders={folders.data ?? []} workspaces={workspaces.data ?? []} sidebar={sidebar} onToggleSidebar={toggleSidebar} />
-        )}
+        <Suspense fallback={<FullPageSpinner />}>
+          <Outlet context={{ sidebar, toggleSidebar } satisfies ShellContext} />
+        </Suspense>
       </main>
     </div>
   );
+}
+
+/** A note, snippet or the links library inside the Notes layout, scrolling on its own. */
+export function NotesPage({ children }: { children: ReactNode }) {
+  const { sidebar, toggleSidebar } = useOutletContext<ShellContext>();
+  return (
+    <div className="relative min-h-0 flex-1 overflow-y-auto">
+      {sidebar ? null : (
+        <div className="sticky top-0 z-10 p-2">
+          <SidebarToggle sidebar={sidebar} onToggle={toggleSidebar} />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/** Home (recent notebooks, drawings, books) or one folder's notebook, notes, code and links. */
+export default function NotebooksApp() {
+  const { folderId } = useParams<{ folderId?: string }>();
+  const { sidebar, toggleSidebar } = useOutletContext<ShellContext>();
+  const workspaces = useWorkspaces();
+  const folders = useFolders();
+  const boards = useList("diagrams", { kind: "board" });
+  const folder = folderId ? folders.data?.find((f) => f.id === folderId) : undefined;
+
+  if (!folderId)
+    return <Home boards={boards.data ?? []} loading={boards.isLoading} folders={folders.data ?? []} workspaces={workspaces.data ?? []} sidebar={sidebar} onToggleSidebar={toggleSidebar} />;
+  if (folders.isLoading) return <FullPageSpinner />;
+  if (!folder) return <EmptyState icon={FolderIcon} title="Folder not found" description="It may have been deleted." className="m-8" />;
+  return <Board key={folder.id} folder={folder} workspace={workspaces.data?.find((w) => w.id === folder.workspaceId)} folders={folders.data ?? []} sidebar={sidebar} onToggleSidebar={toggleSidebar} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -464,6 +501,8 @@ function Board({
     : undefined;
   const create = useCreate("diagrams");
   const [mode, setMode] = useState<"view" | "edit" | null>(null);
+  const [params, setParams] = useSearchParams();
+  const tab = (TABS.some((t) => t.id === params.get("tab")) ? params.get("tab") : "notebook") as FolderTab;
   const effective = mode ?? (board ? (pdf ? "view" : "edit") : null);
   const trail = folderTrail(folder, folders);
   // Edits newer than the PDF (e.g. the tab closed before Done).
@@ -496,7 +535,7 @@ function Board({
             </span>
           ))}
         </nav>
-        {board && effective === "view" ? (
+        {tab === "notebook" && board && effective === "view" ? (
           <div className="flex items-center gap-1">
             {pdf ? (
               <Button variant="ghost" size="sm" className="h-8" asChild>
@@ -517,8 +556,36 @@ function Board({
           </Link>
         </Button>
       </header>
+      <nav className="flex gap-1 border-b bg-card/40 px-3" aria-label="In this folder">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() =>
+              setParams((p) => {
+                if (t.id === "notebook") p.delete("tab");
+                else p.set("tab", t.id);
+                return p;
+              })
+            }
+            aria-current={tab === t.id ? "page" : undefined}
+            className={cn(
+              "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] transition-colors",
+              tab === t.id ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <t.icon className="size-3.5" /> {t.label}
+          </button>
+        ))}
+      </nav>
 
-      {boards.isLoading || files.isLoading ? (
+      {tab === "notes" ? (
+        <FolderNotes folder={folder} />
+      ) : tab === "code" ? (
+        <FolderCode folder={folder} />
+      ) : tab === "links" ? (
+        <FolderLinks folder={folder} />
+      ) : boards.isLoading || files.isLoading ? (
         <FullPageSpinner />
       ) : !board ? (
         <div className="flex flex-1 items-center justify-center p-6">
@@ -556,6 +623,14 @@ function Board({
     </div>
   );
 }
+
+type FolderTab = "notebook" | "notes" | "code" | "links";
+const TABS: { id: FolderTab; label: string; icon: typeof NotebookPen }[] = [
+  { id: "notebook", label: "Notebook", icon: NotebookPen },
+  { id: "notes", label: "Notes", icon: FileText },
+  { id: "code", label: "Code", icon: Code2 },
+  { id: "links", label: "Links", icon: Link2 },
+];
 
 /** The saved board as a PDF, pages stacked and sized to the window (capped for wide screens). */
 function BoardPdf({ url }: { url: string }) {

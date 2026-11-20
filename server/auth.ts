@@ -167,6 +167,65 @@ authRouter.post("/login", loginLimiter, async (req, res) => {
   res.json({ user: publicUser(user) });
 });
 
+// ---------------------------------------------------------------------------
+// Single sign-on into the Notes app. DevSpace is where you sign in; the Notes app (its own
+// address, so its own cookies) gets a session by trading a one-time code from here.
+//
+// 1. Notes (signed out) sets a random state cookie on its address and opens
+//    DevSpace /api/auth/sso/start?return=<Notes URL>&state=<state>.
+// 2. Here, signed in (or after signing in), we mint a 60-second single-use code bound to that
+//    user and state, and redirect to <Notes>/api/auth/sso/callback?code=...&next=<path>.
+// 3. That request reaches this server through the Notes proxy; the code and the state cookie
+//    must match, and the new session cookie is set on the Notes address.
+// ---------------------------------------------------------------------------
+
+const SSO_TTL_MS = 60_000;
+const ssoCodes = new Map<string, { userId: string; state: string; expires: number }>();
+const SSO_STATE_COOKIE = "ds_sso_state";
+
+function safePath(p: unknown): string {
+  return typeof p === "string" && p.startsWith("/") && !p.startsWith("//") && !p.startsWith("/\\") ? p : "/";
+}
+
+authRouter.get("/sso/start", (req, res) => {
+  if (!env.NOTES_URL) throw new HttpError(404, "Single sign-on is not set up");
+  const notes = new URL(env.NOTES_URL);
+  let back: URL;
+  try {
+    back = new URL(String(req.query.return ?? ""));
+  } catch {
+    throw new HttpError(400, "Invalid return address");
+  }
+  if (back.origin !== notes.origin) throw new HttpError(400, "Return address is not the Notes app");
+  const state = String(req.query.state ?? "");
+  if (!/^[\w-]{16,128}$/.test(state)) throw new HttpError(400, "Invalid sign-in state");
+  if (!req.user) {
+    // Sign in on DevSpace first, then come back here.
+    res.redirect(302, `/login?next=${encodeURIComponent(req.originalUrl)}`);
+    return;
+  }
+  const now = Date.now();
+  for (const [k, v] of ssoCodes) if (v.expires < now) ssoCodes.delete(k);
+  const code = randomBytes(32).toString("base64url");
+  ssoCodes.set(code, { userId: req.user.id, state, expires: now + SSO_TTL_MS });
+  const next = safePath(back.pathname + back.search + back.hash);
+  res.redirect(302, `${notes.origin}/api/auth/sso/callback?code=${code}&next=${encodeURIComponent(next)}`);
+});
+
+authRouter.get("/sso/callback", loginLimiter, async (req, res) => {
+  const code = String(req.query.code ?? "");
+  const entry = ssoCodes.get(code);
+  ssoCodes.delete(code); // single use, valid or not
+  const state: unknown = req.cookies?.[SSO_STATE_COOKIE];
+  res.clearCookie(SSO_STATE_COOKIE, { path: "/" });
+  if (!entry || entry.expires < Date.now() || typeof state !== "string" || state !== entry.state) {
+    res.redirect(302, "/login?sso=failed");
+    return;
+  }
+  await createSession(req, res, entry.userId);
+  res.redirect(302, safePath(req.query.next));
+});
+
 authRouter.post("/logout", async (req, res) => {
   const token: unknown = req.cookies?.[COOKIE];
   if (typeof token === "string") await db.delete(schema.sessions).where(eq(schema.sessions.id, hashToken(token)));

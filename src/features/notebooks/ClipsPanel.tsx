@@ -6,7 +6,7 @@ import type { Attachment, CodeSnippet, Resource } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/api";
 import { useAttachments, useCreate, useList, useUpload } from "@/lib/queries";
-import { cn } from "@/lib/utils";
+import { AddLinkForm } from "./AddLinkForm";
 import { insertCode, insertImage, insertLink, screenToScene, type ScenePoint } from "@/features/diagrams/notebook";
 
 /** Something from the folder that can be placed on the board. */
@@ -258,31 +258,5 @@ function ClipSection({ icon, title, count, action, empty, children }: { icon: Re
       {count === 0 && empty ? <p className="mb-2 text-[11px] text-muted-foreground">{empty}</p> : null}
       {children}
     </section>
-  );
-}
-
-function AddLinkForm({ pending, onAdd }: { pending: boolean; onAdd: (url: string) => Promise<boolean> }) {
-  const [url, setUrl] = useState("");
-  return (
-    <form
-      className="mb-2 flex gap-1"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const v = url.trim();
-        if (!v) return;
-        void onAdd(/^[a-z]+:\/\//i.test(v) ? v : `https://${v}`).then((ok) => ok && setUrl(""));
-      }}
-    >
-      <input
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Paste a link to add"
-        aria-label="Link address"
-        className={cn("h-7 min-w-0 flex-1 rounded-md border bg-background px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring")}
-      />
-      <Button type="submit" size="icon" variant="secondary" className="size-7" disabled={pending || !url.trim()} aria-label="Add link">
-        {pending ? <Loader2 className="animate-spin" /> : <Plus />}
-      </Button>
-    </form>
   );
 }

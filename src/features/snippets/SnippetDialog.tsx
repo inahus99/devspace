@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { useCreate, useWorkspaces } from "@/lib/queries";
 import { routes } from "@/lib/routes";
+import { goTo } from "@/lib/app";
 
 export function SnippetDialog({ open, onOpenChange, defaults }: CaptureDialogProps) {
   const { data: workspaces } = useWorkspaces();
@@ -58,7 +59,7 @@ export function SnippetDialog({ open, onOpenChange, defaults }: CaptureDialogPro
     create.mutate(parsed.data, {
       onSuccess: (s) => {
         onOpenChange(false);
-        navigate(routes.snippet(s.id));
+        goTo(navigate, routes.snippet(s.id));
       },
     });
   };

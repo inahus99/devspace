@@ -18,6 +18,7 @@ import { ApiError, downloadUrl, errorMessage } from "@/lib/api";
 import { formatTimestamp } from "@/lib/dates";
 import { useDelete, useItem, useUpdate, useWorkspaceMap } from "@/lib/queries";
 import { routes } from "@/lib/routes";
+import { goTo, isNotesApp } from "@/lib/app";
 import { cn } from "@/lib/utils";
 
 export default function SnippetPage() {
@@ -57,7 +58,8 @@ function SnippetEditor({ snippet }: { snippet: CodeSnippet }) {
 
   const remove = async () => {
     if (!(await confirm({ title: `Delete “${title}”?`, destructive: true }))) return;
-    del.mutate(snippet.id, { onSuccess: () => navigate(routes.workspace(snippet.workspaceId, { tab: "snippets" })) });
+    const back = isNotesApp ? routes.notebooks(snippet.folderId, { tab: "code" }) : routes.workspace(snippet.workspaceId, { tab: "snippets" });
+    del.mutate(snippet.id, { onSuccess: () => goTo(navigate, back) });
   };
 
   return (
@@ -65,7 +67,10 @@ function SnippetEditor({ snippet }: { snippet: CodeSnippet }) {
       <div className="flex flex-wrap items-center justify-between gap-2 pb-5 text-xs text-muted-foreground">
         <nav className="flex items-center gap-1" aria-label="Breadcrumb">
           {ws ? (
-            <Link to={routes.workspace(ws.id, { tab: "snippets" })} className="flex items-center gap-1.5 hover:text-foreground">
+            <Link
+              to={isNotesApp ? routes.notebooks(snippet.folderId, { tab: "code" }) : routes.workspace(ws.id, { tab: "snippets" })}
+              className="flex items-center gap-1.5 hover:text-foreground"
+            >
               <WorkspaceIcon icon={ws.icon} color={ws.color} size="sm" />
               {ws.name}
             </Link>

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { useCreate, useWorkspaces } from "@/lib/queries";
 import { routes } from "@/lib/routes";
+import { goTo } from "@/lib/app";
 import { cn } from "@/lib/utils";
 
 export function NoteCreateDialog({ open, onOpenChange, defaults }: CaptureDialogProps) {
@@ -41,7 +42,7 @@ export function NoteCreateDialog({ open, onOpenChange, defaults }: CaptureDialog
       {
         onSuccess: (note) => {
           onOpenChange(false);
-          navigate(routes.note(note.id));
+          goTo(navigate, routes.note(note.id));
         },
       },
     );
