@@ -1,5 +1,5 @@
 import "./excalidraw-setup";
-import { CaptureUpdateAction, convertToExcalidrawElements, exportToCanvas, getNonDeletedElements } from "@excalidraw/excalidraw";
+import { CaptureUpdateAction, convertToExcalidrawElements, exportToCanvas, FONT_FAMILY, getNonDeletedElements } from "@excalidraw/excalidraw";
 import type { AppState, BinaryFileData, BinaryFiles, DataURL, ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 /**
@@ -142,23 +142,126 @@ function currentPage(api: ExcalidrawImperativeAPI): Frame | null {
   return frames.find((f) => cx >= f.x && cx <= f.x + f.width && cy >= f.y && cy <= f.y + f.height) ?? frames[frames.length - 1]!;
 }
 
-/** Drops an image (e.g. a book page) onto the page in view, scaled to fit inside it. */
-export function insertImage(api: ExcalidrawImperativeAPI, dataURL: string, natural: { width: number; height: number }) {
+/** A point on the board, in scene coordinates (e.g. where something was dropped). */
+export type ScenePoint = { x: number; y: number };
+
+const CLIP_MARGIN = 32;
+const CLIP_GAP = 24;
+const MUTED = "#868e96";
+
+/** Converts a position on screen (e.g. a drop) to board coordinates. */
+export function screenToScene(api: ExcalidrawImperativeAPI, clientX: number, clientY: number): ScenePoint {
+  const s = api.getAppState();
+  return { x: (clientX - s.offsetLeft) / s.zoom.value - s.scrollX, y: (clientY - s.offsetTop) / s.zoom.value - s.scrollY };
+}
+
+/**
+ * Finds room for a clip of the given size: where it was dropped, or else below whatever is
+ * already on the page in view, moving on to later pages (adding one if needed) when it won't fit.
+ */
+function placeClip(api: ExcalidrawImperativeAPI, w: number, h: number, at?: ScenePoint): { x: number; y: number; page: Frame } {
+  const frames = pageFrames(api);
+  if (at) {
+    const page =
+      frames.find((f) => at.x >= f.x && at.x <= f.x + f.width && at.y >= f.y && at.y <= f.y + f.height) ?? currentPage(api) ?? addPage(api, { scroll: false });
+    const x = Math.max(Math.min(at.x - w / 2, page.x + page.width - w - 8), page.x + 8);
+    const y = Math.max(Math.min(at.y - 12, page.y + page.height - h - 8), page.y + 8);
+    return { x, y, page };
+  }
+  const live = getNonDeletedElements(api.getSceneElements()).filter((e) => e.type !== "frame");
+  const first = currentPage(api);
+  for (const page of first ? frames.slice(frames.indexOf(first)) : []) {
+    const onPage = live.filter((e) => e.frameId === page.id || overlaps(e, page));
+    const top = onPage.length ? Math.max(...onPage.map((e) => e.y + e.height)) + CLIP_GAP : page.y + CLIP_MARGIN;
+    // Something taller than a page goes at the top of an empty one.
+    if (top + h <= page.y + page.height - CLIP_MARGIN || (!onPage.length && h > page.height - CLIP_MARGIN * 2)) return { x: page.x + CLIP_MARGIN, y: top, page };
+  }
+  const page = addPage(api, { scroll: false });
+  return { x: page.x + CLIP_MARGIN, y: page.y + CLIP_MARGIN, page };
+}
+
+/** Adds ready-made elements, moved to (x, y) as one group on the given page, and brings them into view. */
+function addClip(api: ExcalidrawImperativeAPI, els: El[], x: number, y: number, page: Frame, dropped: boolean) {
+  const b = bounds(els);
+  const groupId = els.length > 1 ? crypto.randomUUID() : null;
+  const moved = els.map((e) => ({ ...e, x: e.x - b.minX + x, y: e.y - b.minY + y, frameId: page.id, groupIds: groupId ? [groupId] : e.groupIds })) as El[];
+  api.updateScene({ elements: [...api.getSceneElements(), ...moved], captureUpdate: CaptureUpdateAction.IMMEDIATELY });
+  growPages(api);
+  if (dropped) return;
+  const s = api.getAppState();
+  const top = -s.scrollY;
+  const bottom = top + s.height / s.zoom.value;
+  // Scroll only when the clip landed out of view (e.g. on the next page).
+  if (y < top || y + 80 > bottom) api.updateScene({ appState: { scrollY: 72 / s.zoom.value - y } });
+}
+
+/** Drops an image (a screenshot, a book page) onto the board, scaled to fit inside a page. */
+export function insertImage(api: ExcalidrawImperativeAPI, dataURL: string, natural: { width: number; height: number }, at?: ScenePoint) {
   const mimeType = (dataURL.slice(5, dataURL.indexOf(";")) || "image/png") as BinaryFileData["mimeType"];
   const id = crypto.randomUUID() as BinaryFileData["id"];
   api.addFiles([{ id, dataURL: dataURL as DataURL, mimeType, created: Date.now() }]);
-
-  const existing = currentPage(api);
-  const page = existing ?? addPage(api, { scroll: false });
-  const margin = 32;
-  const scale = Math.min((page.width - margin * 2) / natural.width, (page.height - margin * 2) / natural.height, 1);
+  const scale = Math.min((PAGE_W - CLIP_MARGIN * 2) / natural.width, (PAGE_H - CLIP_MARGIN * 2) / natural.height, 1);
   const width = natural.width * scale;
   const height = natural.height * scale;
-  const [img] = convertToExcalidrawElements([
-    { type: "image", fileId: id, x: page.x + (page.width - width) / 2, y: page.y + margin, width, height, frameId: page.id },
+  const spot = placeClip(api, width, height, at);
+  const [img] = convertToExcalidrawElements([{ type: "image", fileId: id, x: 0, y: 0, width, height }]);
+  addClip(api, [img!], spot.x, spot.y, spot.page, !!at);
+}
+
+/** A code snippet as monospace text on a light card, shrunk if needed to fit on a page. */
+export function insertCode(api: ExcalidrawImperativeAPI, code: string, opts: { title?: string; language?: string; at?: ScenePoint } = {}) {
+  const pad = 14;
+  const maxW = PAGE_W - CLIP_MARGIN * 2 - pad * 2;
+  const maxH = PAGE_H - CLIP_MARGIN * 2 - pad * 2 - 30;
+  const body = code.replace(/\t/g, "  ").trimEnd() || " ";
+  const make = (fontSize: number) =>
+    convertToExcalidrawElements([{ type: "text", x: 0, y: 0, text: body, fontSize, fontFamily: FONT_FAMILY.Cascadia, strokeColor: "#1e1e1e" }])[0]!;
+  let text = make(16);
+  const shrink = Math.min(1, maxW / text.width, maxH / text.height);
+  if (shrink < 1) text = make(Math.max(7, Math.floor(16 * shrink * 10) / 10));
+  const label = [opts.title?.trim(), opts.language].filter(Boolean).join(" · ");
+  const head = label
+    ? convertToExcalidrawElements([{ type: "text", x: 0, y: 0, text: label, fontSize: 14, fontFamily: FONT_FAMILY.Helvetica, strokeColor: MUTED }])[0]!
+    : null;
+  const headH = head ? head.height + 6 : 0;
+  const [card] = convertToExcalidrawElements([
+    {
+      type: "rectangle",
+      x: 0,
+      y: headH,
+      width: text.width + pad * 2,
+      height: text.height + pad * 2,
+      backgroundColor: "#f1f3f5",
+      fillStyle: "solid",
+      strokeColor: "#ced4da",
+      strokeWidth: 1,
+      roughness: 0,
+      roundness: { type: 3 },
+    },
   ]);
-  api.updateScene({ elements: [...api.getSceneElements(), img!], captureUpdate: CaptureUpdateAction.IMMEDIATELY });
-  if (!existing) fitPageWidth(api, page);
+  const els = [...(head ? [head] : []), card!, { ...text, x: pad, y: headH + pad } as El];
+  const b = bounds(els);
+  const spot = placeClip(api, b.maxX - b.minX, b.maxY - b.minY, opts.at);
+  addClip(api, els, spot.x, spot.y, spot.page, !!opts.at);
+}
+
+/** A clickable link: its title in blue with the address underneath. Stays clickable in the PDF. */
+export function insertLink(api: ExcalidrawImperativeAPI, url: string, opts: { title?: string; at?: ScenePoint } = {}) {
+  const shown = url.replace(/^https?:\/\//, "");
+  const title = (opts.title?.trim() || shown).slice(0, 120);
+  const maxW = PAGE_W - CLIP_MARGIN * 2;
+  const heading = (fontSize: number) =>
+    convertToExcalidrawElements([{ type: "text", x: 0, y: 0, text: `🔗 ${title}`, fontSize, fontFamily: FONT_FAMILY.Helvetica, strokeColor: "#1971c2" }])[0]!;
+  let t = heading(20);
+  // Long titles shrink to stay inside the page.
+  if (t.width > maxW) t = heading(Math.max(10, Math.floor((20 * maxW) / t.width)));
+  const [u] = convertToExcalidrawElements([
+    { type: "text", x: 0, y: t.height + 6, text: shown.length > 70 ? `${shown.slice(0, 70)}…` : shown, fontSize: 13, fontFamily: FONT_FAMILY.Helvetica, strokeColor: MUTED },
+  ]);
+  const els = [{ ...t, link: url }, { ...u!, link: url }] as El[];
+  const b = bounds(els);
+  const spot = placeClip(api, b.maxX - b.minX, b.maxY - b.minY, opts.at);
+  addClip(api, els, spot.x, spot.y, spot.page, !!opts.at);
 }
 
 /**
@@ -201,6 +304,14 @@ export async function exportPdf(api: ExcalidrawImperativeAPI): Promise<{ blob: B
     if (!pdf) pdf = new jsPDF({ unit: "pt", format: [w, h], orientation, compress: true });
     else pdf.addPage([w, h], orientation);
     pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, w, h, undefined, "FAST");
+    // Keep links clickable: an annotation over each linked element on this page.
+    const f = job.frame;
+    if (f) {
+      const k = w / f.width;
+      for (const e of elements)
+        if (e.link && /^https?:\/\//i.test(e.link) && e.type !== "frame" && overlaps(e, f))
+          pdf.link((e.x - f.x) * k, (e.y - f.y) * k, e.width * k, e.height * k, { url: e.link });
+    }
   }
   return { blob: pdf!.output("blob"), pages: jobs.length };
 }

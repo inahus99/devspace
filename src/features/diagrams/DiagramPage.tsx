@@ -2,8 +2,8 @@ import "./excalidraw-setup";
 import "@excalidraw/excalidraw/index.css";
 import { Excalidraw, exportToBlob, getNonDeletedElements, MainMenu } from "@excalidraw/excalidraw";
 import type { AppState, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
-import { Check, ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, Star, Trash2, ZoomIn } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, Paperclip, Star, Trash2, ZoomIn } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import type { DiagramInput } from "@shared/schemas";
@@ -20,7 +20,10 @@ import { api, ApiError, errorMessage } from "@/lib/api";
 import { useDelete, useDeleteAttachment, useFolders, useItem, useUpdate, useUpload, useWorkspaceMap } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { ClipsPanel } from "@/features/notebooks/ClipsPanel";
 import { addPage, exportPdf, fitPageWidth, getWritingZoom, growPages, pdfFileName, saveBlob, setWritingZoom, startNotebook, WRITING_ZOOMS, type WritingZoom } from "./notebook";
+
+const CLIPS_KEY = "devspace.notebooks.clips";
 
 export default function DiagramPage() {
   const { id } = useParams();
@@ -202,6 +205,26 @@ export function DiagramEditor({
   };
 
   const [zoomPref, setZoomPref] = useState<WritingZoom>(getWritingZoom);
+  // Board only: the folder's screenshots, code and links beside the board.
+  const [clipsOpen, setClipsOpen] = useState(() => {
+    try {
+      return localStorage.getItem(CLIPS_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const toggleClips = (open: boolean) => {
+    setClipsOpen(open);
+    try {
+      localStorage.setItem(CLIPS_KEY, open ? "1" : "0");
+    } catch {
+      /* a per-browser convenience only */
+    }
+  };
+  const boardArea = useRef<HTMLDivElement>(null);
+  const getApi = useCallback(() => draw.current, []);
+  const showClips = variant === "board" && clipsOpen && !!diagram.folderId;
+
   const zoomMenu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -289,6 +312,18 @@ export function DiagramEditor({
           </Button>
           {zoomMenu}
           {pdfMenu}
+          {variant === "board" && diagram.folderId ? (
+            <Button
+              variant={clipsOpen ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8"
+              onClick={() => toggleClips(!clipsOpen)}
+              aria-pressed={clipsOpen}
+              title="Screenshots, code and links from this folder"
+            >
+              <Paperclip /> Clips
+            </Button>
+          ) : null}
           {variant === "board" ? (
             <Button size="sm" className="h-8" onClick={() => void done()} disabled={exporting}>
               {exporting ? <Loader2 className="animate-spin" /> : <Check />} Done
@@ -321,7 +356,8 @@ export function DiagramEditor({
           )}
         </div>
       </div>
-      <div className="relative min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1">
+      <div ref={boardArea} className="relative min-w-0 flex-1">
         <Excalidraw
           excalidrawAPI={(a) => {
             draw.current = a;
@@ -380,6 +416,8 @@ export function DiagramEditor({
             <MainMenu.DefaultItems.ChangeCanvasBackground />
           </MainMenu>
         </Excalidraw>
+      </div>
+      {showClips ? <ClipsPanel getApi={getApi} dropTarget={boardArea} workspaceId={diagram.workspaceId} folderId={diagram.folderId!} onClose={() => toggleClips(false)} /> : null}
       </div>
     </div>
   );
