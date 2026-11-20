@@ -1,4 +1,5 @@
 import archiver from "archiver";
+import { inlineSceneFiles } from "../lib/diagramFiles.ts";
 import { and, asc, eq, gte, lte, type SQL } from "drizzle-orm";
 import { type Response, Router } from "express";
 import TurndownService from "turndown";
@@ -220,9 +221,11 @@ exportRouter.get("/archive.zip", async (req, res) => {
     archive.append(s.code, { name: uniquePath(used, `${dir}/${sanitizeName(s.title)}`, `.${languageExt(s.language)}`) });
   }
   // Diagrams as standard .excalidraw files, which excalidraw.com can open directly.
+  const byId = new Map(data.attachments.map((a) => [a.id, a]));
   for (const d of data.diagrams) {
     const dir = ["diagrams", wsName.get(d.workspaceId) ?? "workspace", d.folderId ? paths.get(d.folderId) : ""].filter(Boolean).join("/");
-    const file = { type: "excalidraw", version: 2, source: "devspace", elements: d.scene.elements ?? [], appState: d.scene.appState ?? {}, files: d.scene.files ?? {} };
+    const files = await inlineSceneFiles(d.scene.files, byId);
+    const file = { type: "excalidraw", version: 2, source: "devspace", elements: d.scene.elements ?? [], appState: d.scene.appState ?? {}, files };
     archive.append(JSON.stringify(file), { name: uniquePath(used, `${dir}/${sanitizeName(d.title)}`, ".excalidraw") });
   }
   for (const sol of data.dsaSolutions) {

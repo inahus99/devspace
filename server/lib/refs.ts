@@ -12,6 +12,7 @@ const REF_TABLES = {
   lldExerciseId: schema.lldExercises,
   resourceId: schema.resources,
   bookId: schema.books,
+  diagramId: schema.diagrams,
 } as const;
 
 const LABELS: Record<string, string> = {
@@ -24,6 +25,7 @@ const LABELS: Record<string, string> = {
   lldExerciseId: "LLD exercise",
   resourceId: "Resource",
   bookId: "Book",
+  diagramId: "Drawing",
 };
 
 /**

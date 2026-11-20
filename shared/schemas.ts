@@ -301,6 +301,7 @@ export const attachmentTargetSchema = z.object({
   dsaProblemId: zOptId,
   lldExerciseId: zOptId,
   bookId: zOptId,
+  diagramId: zOptId,
   label: text(200).optional(),
 });
 export const attachmentUpdateSchema = z.object({

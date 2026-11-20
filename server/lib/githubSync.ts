@@ -17,6 +17,7 @@ import {
   uniquePath,
 } from "../routes/export.ts";
 import { storage } from "../storage.ts";
+import { inlineSceneFiles } from "./diagramFiles.ts";
 import { BANNER_LABEL } from "./images.ts";
 
 /**
@@ -73,7 +74,8 @@ async function buildFiles(userId: string): Promise<Map<string, RepoFile>> {
   // images embedded in notes, problems etc. go to _attachments/.
   const attachmentPath = new Map<string, string>();
   for (const a of data.attachments) {
-    if (a.label === BOOK_FILE_LABEL || a.label === BANNER_LABEL || a.sizeBytes > MAX_FILE_BYTES) continue;
+    // Images on drawings go inside their .excalidraw file instead.
+    if (a.label === BOOK_FILE_LABEL || a.label === BANNER_LABEL || a.diagramId || a.sizeBytes > MAX_FILE_BYTES) continue;
     const standalone = !a.noteId && !a.dsaProblemId && !a.lldExerciseId && !a.bookId;
     const dir = standalone ? `${dirOf(a.workspaceId, a.folderId)}/files` : "_attachments";
     const ext = path.extname(a.fileName).toLowerCase().replace(/[^.a-z0-9]/g, "");
@@ -96,8 +98,10 @@ async function buildFiles(userId: string): Promise<Map<string, RepoFile>> {
   for (const s of data.codeSnippets) {
     put(uniquePath(used, `${dirOf(s.workspaceId, s.folderId)}/${sanitizeName(s.title)}`, `.${languageExt(s.language)}`), { text: s.code });
   }
+  const byId = new Map(data.attachments.map((a) => [a.id, a]));
   for (const d of data.diagrams) {
-    const doc = { type: "excalidraw", version: 2, source: "devspace", elements: d.scene.elements ?? [], appState: d.scene.appState ?? {}, files: d.scene.files ?? {} };
+    const files = await inlineSceneFiles(d.scene.files, byId);
+    const doc = { type: "excalidraw", version: 2, source: "devspace", elements: d.scene.elements ?? [], appState: d.scene.appState ?? {}, files };
     put(uniquePath(used, `${dirOf(d.workspaceId, d.folderId)}/${sanitizeName(d.title)}`, ".excalidraw"), { text: JSON.stringify(doc) });
   }
 

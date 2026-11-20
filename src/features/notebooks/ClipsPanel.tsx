@@ -70,7 +70,7 @@ export function ClipsPanel({
   const dragging = useRef<Clip | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const images = (files.data ?? []).filter((a) => a.kind === "image" && a.label !== "banner");
+  const images = (files.data ?? []).filter((a) => a.kind === "image" && a.label !== "banner" && !a.diagramId);
 
   const place = async (clip: Clip, at?: ScenePoint) => {
     const api = getApi();

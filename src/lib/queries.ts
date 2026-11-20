@@ -315,6 +315,7 @@ export type UploadTarget = {
   dsaProblemId?: string;
   lldExerciseId?: string;
   bookId?: string;
+  diagramId?: string;
   label?: string;
 };
 

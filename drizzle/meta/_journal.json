@@ -50,6 +50,13 @@
       "when": 1795172599530,
       "tag": "0006_diagram_board",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795190658244,
+      "tag": "0007_attachment_diagram",
+      "breakpoints": true
     }
   ]
 }

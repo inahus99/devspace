@@ -1,7 +1,7 @@
 import "./excalidraw-setup";
 import "@excalidraw/excalidraw/index.css";
 import { Excalidraw, exportToBlob, getNonDeletedElements, MainMenu } from "@excalidraw/excalidraw";
-import type { AppState, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
+import type { AppState, BinaryFileData, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
 import { Check, ChevronDown, ChevronRight, Download, ExternalLink, FilePlus2, FileText, Loader2, Paperclip, Star, Trash2, ZoomIn } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
@@ -21,6 +21,7 @@ import { useDelete, useDeleteAttachment, useFolders, useItem, useUpdate, useUplo
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { ClipsPanel } from "@/features/notebooks/ClipsPanel";
+import { inlineFilesOf, loadStoredFiles, pruneStoredFiles, storedFilesOf, storeFile, type StoredFile } from "./sceneFiles";
 import { addPage, exportPdf, fitPageWidth, getWritingZoom, growPages, pdfFileName, saveBlob, setWritingZoom, startNotebook, WRITING_ZOOMS, type WritingZoom } from "./notebook";
 
 const CLIPS_KEY = "devspace.notebooks.clips";
@@ -101,6 +102,32 @@ export function DiagramEditor({
   const draw = useRef<ExcalidrawImperativeAPI | null>(null);
   const lastSig = useRef<string | null>(null);
   const seeded = useRef(false);
+  // Images kept in file storage (see sceneFiles.ts), uploads in flight, and the initial load.
+  const stored = useRef(storedFilesOf(diagram.scene.files as Record<string, unknown>));
+  const uploads = useRef(new Map<string, Promise<StoredFile | null>>());
+  const filesLoaded = useRef<Promise<void>>(Promise.resolve());
+
+  useEffect(() => {
+    const openedAt = Date.now();
+    const t = setTimeout(() => void pruneStoredFiles(diagram.id, [...stored.current.values()].map((f) => f.attachmentId), openedAt).catch(() => {}), 3000);
+    return () => clearTimeout(t);
+  }, [diagram.id]);
+
+  /** The reference to save for an image: uploads it the first time it's seen inline. */
+  const storedRef = (fileId: string, file: BinaryFileData | undefined): Promise<StoredFile | null> => {
+    const known = stored.current.get(fileId);
+    if (known) return Promise.resolve(known);
+    if (!file?.dataURL.startsWith("data:")) return Promise.resolve(null);
+    let p = uploads.current.get(fileId);
+    if (!p) {
+      p = storeFile(diagram, file)
+        .then((s) => (stored.current.set(fileId, s), s))
+        .catch(() => null)
+        .finally(() => uploads.current.delete(fileId));
+      uploads.current.set(fileId, p);
+    }
+    return p;
+  };
 
   const backTo = diagram.bookId && !diagram.folderId ? routes.book(diagram.bookId) : routes.workspace(diagram.workspaceId, { folder: diagram.folderId ?? undefined });
 
@@ -108,7 +135,7 @@ export function DiagramEditor({
     () => ({
       elements: (diagram.scene.elements ?? []) as ExcalidrawInitialDataState["elements"],
       appState: { ...(diagram.scene.appState ?? {}), theme: dark ? "dark" : "light" } as ExcalidrawInitialDataState["appState"],
-      files: (diagram.scene.files ?? {}) as BinaryFiles,
+      files: inlineFilesOf(diagram.scene.files as Record<string, unknown>),
       scrollToContent: true,
     }),
     // Only used on mount.
@@ -122,16 +149,26 @@ export function DiagramEditor({
         const elements = getNonDeletedElements(draw.current.getSceneElements());
         const appState = draw.current.getAppState();
         const allFiles = draw.current.getFiles();
-        const files: BinaryFiles = {};
-        for (const el of elements) {
-          if (el.type === "image" && el.fileId && allFiles[el.fileId]) files[el.fileId] = allFiles[el.fileId];
-        }
+        // Saved scene: references to stored images. Preview: the loaded image data.
+        const files: Record<string, unknown> = {};
+        const previewFiles: BinaryFiles = {};
+        await Promise.all(
+          elements.map(async (el) => {
+            if (el.type !== "image" || !el.fileId) return;
+            const id = el.fileId;
+            if (allFiles[id]) previewFiles[id] = allFiles[id];
+            const ref = await storedRef(id, allFiles[id]);
+            // If the upload failed, keep the image inline rather than lose it.
+            if (ref) files[id] = ref;
+            else if (allFiles[id]) files[id] = allFiles[id];
+          }),
+        );
         let preview = "";
         if (elements.length) {
           try {
             const blob = await exportToBlob({
               elements,
-              files,
+              files: previewFiles,
               appState: { ...appState, exportBackground: true, exportWithDarkMode: false },
               mimeType: "image/webp",
               quality: 0.8,
@@ -165,6 +202,7 @@ export function DiagramEditor({
     if (!draw.current) return;
     setExporting(true);
     try {
+      await filesLoaded.current; // stored images must be on the board before rendering pages
       const { blob, pages } = await exportPdf(draw.current);
       const name = pdfFileName(title);
       if (mode === "download") {
@@ -373,6 +411,7 @@ export function DiagramEditor({
             const attempt = () => {
               const cur = draw.current;
               const ready = cur && !cur.getAppState().isLoading && cur.getAppState().width > 0;
+              if (ready && stored.current.size) filesLoaded.current = loadStoredFiles(cur, [...stored.current.values()]);
               if (ready && fresh) {
                 // A new notebook opens on its first blank page, pencil ready.
                 if (!cur.getSceneElements().length) addPage(cur);
