@@ -23,7 +23,7 @@ import {
 import { type ReactNode, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { RESOURCE_TYPE_LABELS } from "@shared/constants";
-import type { DashboardResponse, Memo, Workspace } from "@shared/types";
+import type { DashboardResponse, Memo, Resource, Workspace } from "@shared/types";
 import { addDaysISO, formatMinutes } from "@shared/time";
 import { EmptyState, ErrorState, LoadingRows, Page, Section, Stat } from "@/components/common/states";
 import { WorkspaceIcon } from "@/components/common/WorkspaceIcon";
@@ -36,7 +36,7 @@ import { contentHref, routes } from "@/lib/routes";
 import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { useUi } from "@/stores/ui";
 import { MonthHeatmap } from "../analytics/Heatmap";
-import { WorkspaceMemos } from "./WorkspaceMemos";
+import { FavoriteResources, WorkspaceMemos } from "./WorkspaceMemos";
 import { ActivityItem } from "../planner/ActivityItem";
 import { sortActivities } from "../planner/lib";
 import { QuickAdd } from "../planner/QuickAdd";
@@ -357,11 +357,17 @@ function WorkspaceGrid({
   const openCapture = useUi((s) => s.openCapture);
   const byId = new Map((summaries ?? []).map((s) => [s.workspaceId, s]));
   const memos = useList("memos");
+  const favorites = useList("resources", { favorite: "1", sort: "updated" });
   const memosByWorkspace = useMemo(() => {
     const map = new Map<string, Memo[]>();
     for (const m of memos.data ?? []) map.set(m.workspaceId, [...(map.get(m.workspaceId) ?? []), m]);
     return map;
   }, [memos.data]);
+  const favoritesByWorkspace = useMemo(() => {
+    const map = new Map<string, Resource[]>();
+    for (const r of favorites.data ?? []) if (r.workspaceId) map.set(r.workspaceId, [...(map.get(r.workspaceId) ?? []), r]);
+    return map;
+  }, [favorites.data]);
   if (loading) return <LoadingRows rows={2} />;
   if (!workspaces.length) return null;
   return (
@@ -396,6 +402,7 @@ function WorkspaceGrid({
                 {s ? ` · ${summaryLine(s)}` : ""}
               </p>
               </Link>
+              <FavoriteResources resources={favoritesByWorkspace.get(w.id) ?? []} />
               <WorkspaceMemos workspaceId={w.id} memos={memosByWorkspace.get(w.id) ?? []} />
             </div>
           );

@@ -1,9 +1,57 @@
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import type { Memo } from "@shared/types";
+import type { Memo, Resource } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { timeAgo } from "@/lib/dates";
 import { useCreate, useDelete, useUpdate } from "@/lib/queries";
+
+/** How many favourite links a card shows before "+n". */
+const SHOWN_FAVORITES = 4;
+
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
+
+/** The workspace's starred links, as chips that open the resource. */
+export function FavoriteResources({ resources }: { resources: Resource[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!resources.length) return null;
+  const shown = expanded ? resources : resources.slice(0, SHOWN_FAVORITES);
+  const more = resources.length - shown.length;
+  return (
+    <div className="mt-3 border-t pt-3">
+      <p className="mb-1.5 flex items-center gap-1 text-2xs font-medium text-muted-foreground">
+        <Star className="size-3 fill-amber-400 text-amber-400" /> Favourite resources
+      </p>
+      <ul className="flex flex-wrap gap-1.5">
+        {shown.map((r) => (
+          <li key={r.id} className="min-w-0 max-w-full">
+            <a
+              href={r.url}
+              target="_blank"
+              rel="noreferrer"
+              title={`${r.title} · ${hostOf(r.url)}`}
+              className="block max-w-56 truncate rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs hover:border-primary/40 hover:text-primary"
+            >
+              {r.title}
+            </a>
+          </li>
+        ))}
+        {more > 0 || expanded ? (
+          <li>
+            <button type="button" onClick={() => setExpanded((v) => !v)} className="rounded-full px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground">
+              {expanded ? "Show fewer" : `+${more} more`}
+            </button>
+          </li>
+        ) : null}
+      </ul>
+    </div>
+  );
+}
 
 /** How many memos a card shows before "Show all". */
 const SHOWN = 3;
