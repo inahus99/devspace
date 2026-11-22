@@ -1,6 +1,5 @@
 import archiver from "archiver";
-import { inlineSceneFiles } from "../lib/diagramFiles.ts";
-import { and, asc, eq, gte, lte, type SQL } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
 import { type Response, Router } from "express";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
@@ -8,6 +7,7 @@ import { languageExt } from "../../shared/constants.ts";
 import { db, schema } from "../db/index.ts";
 import { notFound, param, qs, qsDate, uid } from "../lib/http.ts";
 import { attachTags } from "../lib/tags.ts";
+import { buildBackupFiles } from "../lib/backupLayout.ts";
 import { storage } from "../storage.ts";
 
 const {
@@ -175,7 +175,7 @@ export function backupDocument(data: Awaited<ReturnType<typeof loadAll>>) {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     profile,
-    data: { ...rest, attachments: rest.attachments.map((a) => ({ ...a, archivePath: attachmentArchivePath(a) })) },
+    data: { ...rest, attachments: rest.attachments.map((a) => ({ ...a, archivePath: attachmentArchivePath(a) as string | null })) },
   };
 }
 
@@ -201,89 +201,39 @@ exportRouter.get("/backup.json", async (req, res) => {
   sendFile(res, `devspace-backup-${stamp()}.json`, "application/json", JSON.stringify(doc, null, 2));
 });
 
-/** Everything: JSON backup + attachment files + Markdown notes + source snippets + CSVs. */
+/**
+ * Everything, laid out like the app (see backupLayout.ts): notes, code, drawings, links,
+ * questions, files and book PDFs per workspace and folder, plus devspace-backup.json.
+ * Stamps the account's lastBackupAt once the whole archive has been written.
+ */
 exportRouter.get("/archive.zip", async (req, res) => {
   const userId = uid(req);
-  const data = await loadAll(userId);
-  const archive = startZip(res, `devspace-archive-${stamp()}.zip`);
-  const wsName = new Map(data.workspaces.map((w) => [w.id, sanitizeName(w.name, "workspace")]));
-  const paths = folderPaths(data.folders);
-  const tagNames = new Map(data.tags.map((t) => [t.id, t.name]));
-  const tagsFor = (key: "noteId" | "snippetId" | "dsaProblemId" | "bookId", id: string) =>
-    data.contentTags.filter((c) => c[key] === id).map((c) => tagNames.get(c.tagId) ?? "").filter(Boolean);
-  const attachmentPath = new Map(data.attachments.map((a) => [a.id, attachmentArchivePath(a)]));
-
-  archive.append(JSON.stringify(backupDocument(data), null, 2), { name: "devspace-backup.json" });
-  archive.append(README, { name: "README.md" });
-
-  const used = new Set<string>();
-  for (const n of data.notes) {
-    const dir = ["notes", wsName.get(n.workspaceId) ?? "workspace", n.folderId ? paths.get(n.folderId) : ""].filter(Boolean).join("/");
-    const file = uniquePath(used, `${dir}/${sanitizeName(n.title)}`, ".md");
-    const rel = "../".repeat(file.split("/").length - 1);
-    const md = noteToMarkdown({ ...n, tags: tagsFor("noteId", n.id) }, {
-      workspace: data.workspaces.find((w) => w.id === n.workspaceId)?.name,
-      folder: n.folderId ? paths.get(n.folderId) : undefined,
-    }).replace(/\/api\/files\/([0-9a-f-]{36})/g, (m, id: string) => (attachmentPath.has(id) ? `${rel}${attachmentPath.get(id)}` : m));
-    archive.append(md, { name: file });
-  }
-  for (const s of data.codeSnippets) {
-    const dir = ["snippets", wsName.get(s.workspaceId) ?? "workspace", s.folderId ? paths.get(s.folderId) : ""].filter(Boolean).join("/");
-    archive.append(s.code, { name: uniquePath(used, `${dir}/${sanitizeName(s.title)}`, `.${languageExt(s.language)}`) });
-  }
-  // Diagrams as standard .excalidraw files, which excalidraw.com can open directly.
-  const byId = new Map(data.attachments.map((a) => [a.id, a]));
-  for (const d of data.diagrams) {
-    const dir = ["diagrams", wsName.get(d.workspaceId) ?? "workspace", d.folderId ? paths.get(d.folderId) : ""].filter(Boolean).join("/");
-    const files = await inlineSceneFiles(d.scene.files, byId);
-    const file = { type: "excalidraw", version: 2, source: "devspace", elements: d.scene.elements ?? [], appState: d.scene.appState ?? {}, files };
-    archive.append(JSON.stringify(file), { name: uniquePath(used, `${dir}/${sanitizeName(d.title)}`, ".excalidraw") });
-  }
-  for (const sol of data.dsaSolutions) {
-    const p = data.dsaProblems.find((x) => x.id === sol.problemId);
-    if (!p) continue;
-    archive.append(sol.code, {
-      name: uniquePath(used, `dsa/solutions/${sanitizeName(p.title)}/${sanitizeName(sol.title)}`, `.${languageExt(sol.language)}`),
-    });
-  }
-  for (const w of data.workspaces) {
-    const md = memosMarkdown(w.name, data.memos.filter((m) => m.workspaceId === w.id));
-    if (md) archive.append(md, { name: uniquePath(used, `progress-notes/${wsName.get(w.id) ?? "workspace"}`, ".md") });
-  }
-  archive.append(
-    toCsv(
-      data.activities.map((a) => ({ ...a, workspace: a.workspaceId ? (wsName.get(a.workspaceId) ?? "") : "" })),
-      ACTIVITY_COLUMNS,
-    ),
-    { name: "activities.csv" },
-  );
-  archive.append(
-    toCsv(data.dsaProblems.map((p) => ({ ...p, tags: tagsFor("dsaProblemId", p.id), workspace: wsName.get(p.workspaceId) })), DSA_COLUMNS),
-    { name: "dsa/problems.csv" },
-  );
-  archive.append(
-    toCsv(
-      data.books.map((b) => ({ ...b, tags: tagsFor("bookId", b.id), progressPercent: b.totalPages ? Math.round((b.currentPage / b.totalPages) * 100) : 0 })),
-      BOOK_COLUMNS,
-    ),
-    { name: "books/books.csv" },
-  );
-
-  // Attachment binaries, one at a time to keep memory and connections bounded.
-  for (const a of data.attachments) {
+  const files = await buildBackupFiles(userId);
+  const archive = startZip(res, `devspace-backup-${stamp()}.zip`);
+  const root = `devspace-backup-${stamp()}`;
+  for (const [name, f] of files) {
+    if ("text" in f) {
+      archive.append(f.text, { name: `${root}/${name}` });
+      continue;
+    }
+    // Files one at a time, to keep memory and storage connections bounded.
     try {
-      const obj = await storage.get(a.storageKey);
+      const obj = await storage.get(f.attachment.storageKey);
       if (!obj) continue;
       await new Promise<void>((resolve, reject) => {
         archive.once("entry", () => resolve());
         obj.stream.once("error", reject);
-        archive.append(obj.stream, { name: attachmentArchivePath(a) });
+        archive.append(obj.stream, { name: `${root}/${name}` });
       });
     } catch (err) {
-      console.error(`[export] skipped attachment ${a.id}`, err);
+      console.error(`[export] skipped attachment ${f.attachment.id}`, err);
     }
   }
   await archive.finalize();
+  await db
+    .update(users)
+    .set({ settings: sql`${users.settings} || ${JSON.stringify({ lastBackupAt: new Date().toISOString() })}::jsonb` })
+    .where(eq(users.id, userId));
 });
 
 exportRouter.get("/notes.zip", async (req, res) => {
@@ -416,41 +366,3 @@ exportRouter.get("/books.:format", async (req, res) => {
   }));
   sendFile(res, `devspace-books-${stamp()}.json`, "application/json", JSON.stringify(doc, null, 2));
 });
-
-const README = `# DevSpace archive
-
-This archive is a complete, portable copy of your DevSpace data.
-
-| Path | Contents |
-| --- | --- |
-| \`devspace-backup.json\` | Every record (format \`${BACKUP_FORMAT}\`, version ${BACKUP_VERSION}). See below. |
-| \`notes/<workspace>/<folders>/<title>.md\` | Notes as Markdown with YAML front-matter. Images point into \`attachments/\`. |
-| \`snippets/<workspace>/<folders>/<title>.<ext>\` | Code snippets in their original language. |
-| \`dsa/solutions/<problem>/<solution>.<ext>\` | DSA solutions as source files. |
-| \`progress-notes/<workspace>.md\` | The short notes on each workspace card on the dashboard. |
-| \`dsa/problems.csv\`, \`books/books.csv\`, \`activities.csv\` | Spreadsheet-friendly tables. |
-| \`attachments/<id>-<filename>\` | Uploaded files, screenshots and PDFs. |
-
-## devspace-backup.json
-
-\`\`\`
-{
-  "format": "${BACKUP_FORMAT}",
-  "version": ${BACKUP_VERSION},
-  "exportedAt": ISO timestamp,
-  "profile": { email, displayName, settings, createdAt },
-  "data": {
-    "workspaces", "folders", "notes", "codeSnippets", "resources", "dsaProblems", "dsaSolutions",
-    "lldExercises", "books", "bookHighlights", "readingLogs", "attachments", "activities",
-    "tags", "contentTags", "memos"
-  }
-}
-\`\`\`
-
-Each array holds rows exactly as stored in PostgreSQL (camelCase column names, UUID ids).
-Relationships use the same ids (e.g. \`notes[].workspaceId\` → \`workspaces[].id\`,
-\`folders[].parentId\` → \`folders[].id\`). Dates are \`YYYY-MM-DD\` (local calendar dates);
-timestamps are ISO-8601 UTC. Rich notes keep both the TipTap JSON (\`contentJson\`) and HTML
-(\`contentHtml\`); Markdown notes use \`contentMarkdown\`. \`attachments[].archivePath\` locates
-each file inside this archive.
-`;

@@ -20,17 +20,6 @@ const schema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_FORCE_PATH_STYLE: bool,
-  /** Optional one-way mirror of notes, code, links and drawings into a private GitHub repo. */
-  GITHUB_SYNC_TOKEN: z.string().optional(),
-  GITHUB_SYNC_REPO: z
-    .string()
-    .regex(/^[\w.-]+\/[\w.-]+$/, "GITHUB_SYNC_REPO must look like owner/name")
-    .optional(),
-  GITHUB_SYNC_BRANCH: z.string().default("main"),
-  /** Minutes between automatic syncs; 0 turns automatic syncing off. */
-  GITHUB_SYNC_INTERVAL_MIN: z.coerce.number().min(0).default(60),
-  /** Which DevSpace account to mirror; defaults to the only account when there is one. */
-  GITHUB_SYNC_USER_EMAIL: z.string().optional(),
   /** Public address of the separate Notes app (notebooks, drawings, book reader). Unset: they stay inside DevSpace. */
   NOTES_URL: z
     .string()

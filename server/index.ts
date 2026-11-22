@@ -14,8 +14,6 @@ import { activitiesRouter } from "./routes/activities.ts";
 import { attachmentsRouter, filesRouter } from "./routes/attachments.ts";
 import { booksRouter, diagramsRouter, dsaRouter, lldRouter, memosRouter, notesRouter, resourcesRouter, snippetsRouter } from "./routes/content.ts";
 import { exportRouter } from "./routes/export.ts";
-import { syncRouter } from "./routes/sync.ts";
-import { startSyncSchedule } from "./lib/githubSync.ts";
 import { insightsRouter, searchRouter, tagsRouter } from "./routes/insights.ts";
 import { foldersRouter, workspacesRouter } from "./routes/workspaces.ts";
 import { drainStorageDeletions, storage } from "./storage.ts";
@@ -80,7 +78,6 @@ api.use("/search", searchRouter);
 api.use("/tags", tagsRouter);
 api.use("/insights", insightsRouter);
 api.use("/export", exportRouter);
-api.use("/sync", syncRouter);
 app.use("/api", api);
 app.use("/api", () => {
   throw new HttpError(404, "Unknown API route");
@@ -117,12 +114,10 @@ const drainTimer = setInterval(() => {
   drainStorageDeletions().catch((err) => console.error("[storage] drain failed", err));
 }, 10 * 60 * 1000);
 drainStorageDeletions().catch(() => {});
-const stopSync = startSyncSchedule();
 
 function shutdown(signal: string) {
   console.log(`[devspace] ${signal} received, shutting down`);
   clearInterval(drainTimer);
-  stopSync();
   server.close(() => {
     pool.end().finally(() => process.exit(0));
   });

@@ -65,6 +65,8 @@ export type UserSettings = {
   theme?: "light" | "dark" | "system";
   weekStartsOn?: 0 | 1;
   dailyGoalMinutes?: number;
+  /** When the account last downloaded a full backup (ISO timestamp); set by the server. */
+  lastBackupAt?: string;
 };
 
 /** "profiles" in the product spec. One row per account. */

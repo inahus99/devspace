@@ -36,6 +36,7 @@ import { contentHref, routes } from "@/lib/routes";
 import { DEFAULT_BANNER_URL } from "@/lib/banners";
 import { useUi } from "@/stores/ui";
 import { MonthHeatmap } from "../analytics/Heatmap";
+import { BackupNudge } from "../settings/backup";
 import { FavoriteResources, WorkspaceMemos } from "./WorkspaceMemos";
 import { ActivityItem } from "../planner/ActivityItem";
 import { sortActivities } from "../planner/lib";
@@ -174,6 +175,8 @@ export default function DashboardPage() {
               <p className="px-2 py-4 text-sm text-muted-foreground">Nothing planned yet — add one thing you want to learn today.</p>
             )}
           </Section>
+
+          <BackupNudge />
 
           <WorkspaceGrid summaries={dash.data?.workspaces} workspaces={activeWorkspaces} loading={dash.isLoading || wsLoading} />
 

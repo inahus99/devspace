@@ -11,7 +11,7 @@ import { type Theme, useTheme } from "@/hooks/useTheme";
 import { api, downloadUrl, errorMessage } from "@/lib/api";
 import { useMe, useUpdateProfile } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { GitHubSyncSection } from "./GitHubSyncSection";
+import { lastBackupLabel, useBackup } from "./backup";
 
 export default function SettingsPage() {
   return (
@@ -21,7 +21,6 @@ export default function SettingsPage() {
         <ProfileSection />
         <AppearanceSection />
         <ExportSection />
-        <GitHubSyncSection />
         <PasswordSection />
       </div>
     </Page>
@@ -127,15 +126,24 @@ function ExportRow({ icon: Icon, title, description, actions }: { icon: typeof F
 }
 
 function ExportSection() {
+  const backup = useBackup();
   return (
     <Section title="Export & backup" bodyClassName="py-1">
       <ul className="divide-y">
-        <ExportRow
-          icon={Archive}
-          title="Complete archive"
-          description="Everything in one .zip: JSON backup, Markdown notes, source-code snippets, CSVs and all uploaded files."
-          actions={[{ label: "Download .zip", path: "/export/archive.zip" }]}
-        />
+        <li className="flex flex-wrap items-center gap-3 py-3">
+          <Archive className="size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Full backup</p>
+            <p className="text-xs text-muted-foreground">
+              Everything in one .zip, laid out like your workspaces and folders: notes as Markdown, code, drawings, links, files, book PDFs and a
+              complete JSON copy of every record. Keep it on your computer or a drive you trust.
+            </p>
+            <p className={cn("mt-1 text-xs", backup.overdue ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")}>{lastBackupLabel(backup.last)}</p>
+          </div>
+          <Button size="sm" onClick={backup.download}>
+            <Download /> Download backup
+          </Button>
+        </li>
         <ExportRow
           icon={FileJson}
           title="Data backup (JSON)"
