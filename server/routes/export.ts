@@ -12,7 +12,7 @@ import { storage } from "../storage.ts";
 
 const {
   users, workspaces, folders, notes, codeSnippets, diagrams, resources, dsaProblems, dsaSolutions, lldExercises, books, bookHighlights,
-  readingLogs, attachments, activities, tags, contentTags,
+  readingLogs, attachments, activities, tags, contentTags, memos,
 } = schema;
 
 export const BACKUP_FORMAT = "devspace-backup";
@@ -127,7 +127,7 @@ export function folderPaths(rows: (typeof folders.$inferSelect)[]): Map<string, 
 export async function loadAll(userId: string) {
   const own = <T extends { userId: unknown }>(t: T) => eq((t as unknown as typeof notes).userId, userId);
   const [
-    ws, fs, ns, sn, dg, rs, dp, ds, ll, bk, hl, rl, at, ac, tg, ct, me,
+    ws, fs, ns, sn, dg, rs, dp, ds, ll, bk, hl, rl, at, ac, tg, ct, mm, me,
   ] = await Promise.all([
     db.select().from(workspaces).where(own(workspaces)).orderBy(asc(workspaces.position)),
     db.select().from(folders).where(own(folders)).orderBy(asc(folders.position)),
@@ -145,6 +145,7 @@ export async function loadAll(userId: string) {
     db.select().from(activities).where(own(activities)).orderBy(asc(activities.date)),
     db.select().from(tags).where(own(tags)),
     db.select().from(contentTags).where(own(contentTags)),
+    db.select().from(memos).where(own(memos)).orderBy(asc(memos.createdAt)),
     db.select({ email: users.email, displayName: users.displayName, settings: users.settings, createdAt: users.createdAt })
       .from(users).where(eq(users.id, userId)),
   ]);
@@ -152,7 +153,17 @@ export async function loadAll(userId: string) {
     profile: me[0],
     workspaces: ws, folders: fs, notes: ns, codeSnippets: sn, diagrams: dg, resources: rs, dsaProblems: dp, dsaSolutions: ds,
     lldExercises: ll, books: bk, bookHighlights: hl, readingLogs: rl, attachments: at, activities: ac, tags: tg, contentTags: ct,
+    memos: mm,
   };
+}
+
+/** A workspace's dashboard notes as Markdown, newest first, or null when it has none. */
+export function memosMarkdown(workspaceName: string, rows: (typeof memos.$inferSelect)[]): string | null {
+  if (!rows.length) return null;
+  const items = [...rows]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .map((m) => `## ${m.createdAt.toISOString().slice(0, 10)}\n\n${m.body.trim()}\n`);
+  return `# ${workspaceName}: progress notes\n\nShort notes from the DevSpace dashboard on how this topic is going.\n\n${items.join("\n")}`;
 }
 
 const attachmentArchivePath = (a: typeof attachments.$inferSelect) => `attachments/${a.id}-${sanitizeName(a.fileName, "file")}`;
@@ -234,6 +245,10 @@ exportRouter.get("/archive.zip", async (req, res) => {
     archive.append(sol.code, {
       name: uniquePath(used, `dsa/solutions/${sanitizeName(p.title)}/${sanitizeName(sol.title)}`, `.${languageExt(sol.language)}`),
     });
+  }
+  for (const w of data.workspaces) {
+    const md = memosMarkdown(w.name, data.memos.filter((m) => m.workspaceId === w.id));
+    if (md) archive.append(md, { name: uniquePath(used, `progress-notes/${wsName.get(w.id) ?? "workspace"}`, ".md") });
   }
   archive.append(
     toCsv(
@@ -412,6 +427,7 @@ This archive is a complete, portable copy of your DevSpace data.
 | \`notes/<workspace>/<folders>/<title>.md\` | Notes as Markdown with YAML front-matter. Images point into \`attachments/\`. |
 | \`snippets/<workspace>/<folders>/<title>.<ext>\` | Code snippets in their original language. |
 | \`dsa/solutions/<problem>/<solution>.<ext>\` | DSA solutions as source files. |
+| \`progress-notes/<workspace>.md\` | The short notes on each workspace card on the dashboard. |
 | \`dsa/problems.csv\`, \`books/books.csv\`, \`activities.csv\` | Spreadsheet-friendly tables. |
 | \`attachments/<id>-<filename>\` | Uploaded files, screenshots and PDFs. |
 
@@ -426,7 +442,7 @@ This archive is a complete, portable copy of your DevSpace data.
   "data": {
     "workspaces", "folders", "notes", "codeSnippets", "resources", "dsaProblems", "dsaSolutions",
     "lldExercises", "books", "bookHighlights", "readingLogs", "attachments", "activities",
-    "tags", "contentTags"
+    "tags", "contentTags", "memos"
   }
 }
 \`\`\`

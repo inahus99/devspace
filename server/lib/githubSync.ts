@@ -11,6 +11,7 @@ import {
   DSA_COLUMNS,
   folderPaths,
   loadAll,
+  memosMarkdown,
   noteToMarkdown,
   sanitizeName,
   toCsv,
@@ -105,6 +106,12 @@ async function buildFiles(userId: string): Promise<Map<string, RepoFile>> {
     put(uniquePath(used, `${dirOf(d.workspaceId, d.folderId)}/${sanitizeName(d.title)}`, ".excalidraw"), { text: JSON.stringify(doc) });
   }
 
+  // Dashboard notes: one file at the top of each workspace.
+  for (const w of data.workspaces) {
+    const md = memosMarkdown(w.name, data.memos.filter((m) => m.workspaceId === w.id));
+    if (md) put(uniquePath(used, `${dirOf(w.id, null)}/progress-notes`, ".md"), { text: md });
+  }
+
   // Links and questions: one Markdown list per folder.
   const group = <T extends { workspaceId: string | null; folderId: string | null }>(rows: T[]) => {
     const m = new Map<string, T[]>();
@@ -186,6 +193,7 @@ async function buildFiles(userId: string): Promise<Map<string, RepoFile>> {
       `# DevSpace notes\n\nA read-only mirror of DevSpace, updated automatically. Edit in DevSpace; changes made here are overwritten.\n\n` +
       `## Workspaces\n\n${tree || "_None yet._"}\n\n` +
       `Each folder holds its notes (\`.md\`), code, drawings (\`.excalidraw\`, open at excalidraw.com), \`links.md\`, \`questions.md\` and a \`files/\` folder of screenshots and saved PDFs.\n\n` +
+      `- \`<workspace>/progress-notes.md\`: the short notes on that workspace's dashboard card\n` +
       `- \`books/\`: highlights, notes and reading log per book (book PDFs stay in DevSpace)\n` +
       `- \`_attachments/\`: images embedded inside notes\n` +
       `- \`activities.csv\`, \`devspace-backup.json\`: your plan history and a full data backup\n`,
