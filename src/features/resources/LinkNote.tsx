@@ -56,12 +56,25 @@ function useSaveNote(r: Resource) {
  * The note on a link card: your text and images. Clicking it opens the note in a bigger card.
  * `editing` is lifted so the card's menu can start a note too.
  */
-export function LinkNote({ r, editing, setEditing }: { r: Resource; editing: boolean; setEditing: (v: boolean) => void }) {
-  const images = useLinkImages(r.id);
+export function LinkNote({
+  r,
+  images,
+  editing,
+  setEditing,
+  open,
+  setOpen,
+}: {
+  r: Resource;
+  images: Attachment[];
+  editing: boolean;
+  setEditing: (v: boolean) => void;
+  /** The bigger note card; the card's image opens it too. */
+  open: boolean;
+  setOpen: (v: boolean) => void;
+}) {
   const note = useSaveNote(r);
   const imgs = useAddImages(r.id);
-  const [open, setOpen] = useState(false);
-  const has = !!r.description || images.length > 0;
+  const has = !!r.description;
 
   return (
     <div className="mt-2.5">
@@ -86,13 +99,10 @@ export function LinkNote({ r, editing, setEditing }: { r: Resource; editing: boo
           title="Open note"
           className="flex w-full flex-col gap-2 rounded-lg border border-warning/25 bg-warning/8 px-2.5 py-2 text-left transition-colors hover:border-warning/50"
         >
-          {r.description ? (
-            <span className="flex gap-2">
-              <StickyNote className="mt-0.5 size-3.5 shrink-0 text-warning" />
-              <span className="line-clamp-3 flex-1 text-xs leading-relaxed whitespace-pre-wrap">{r.description}</span>
-            </span>
-          ) : null}
-          {images.length ? <Thumbs images={images} /> : null}
+          <span className="flex gap-2">
+            <StickyNote className="mt-0.5 size-3.5 shrink-0 text-warning" />
+            <span className="line-clamp-4 flex-1 text-xs leading-relaxed whitespace-pre-wrap">{r.description}</span>
+          </span>
         </button>
       ) : null}
 
@@ -114,20 +124,41 @@ export function LinkNote({ r, editing, setEditing }: { r: Resource; editing: boo
   );
 }
 
-function Thumbs({ images }: { images: Attachment[] }) {
-  const shown = images.slice(0, 3);
-  const more = images.length - shown.length;
+/**
+ * Your note's images as the card's picture, like Google Keep: one image at its own shape,
+ * two side by side, more as a large first image over a row of the rest.
+ */
+export function NoteImages({ images, onOpen }: { images: Attachment[]; onOpen: () => void }) {
+  const [first, ...rest] = images;
+  if (!first) return null;
+  const row = rest.slice(0, 3);
+  const more = rest.length - row.length;
+  const img = (a: Attachment, className: string) => <img src={a.url} alt="" loading="lazy" className={cn("block w-full bg-muted object-cover", className)} />;
   return (
-    <span className="flex gap-1.5">
-      {shown.map((a, i) => (
-        <span key={a.id} className="relative h-14 flex-1 overflow-hidden rounded-md border bg-muted">
-          <img src={a.url} alt="" loading="lazy" className="size-full object-cover" />
-          {more > 0 && i === shown.length - 1 ? (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-semibold text-white">+{more}</span>
-          ) : null}
+    <button type="button" onClick={onOpen} title="Open note" className="block w-full overflow-hidden border-b text-left">
+      {images.length === 2 ? (
+        <span className="grid grid-cols-2 gap-0.5">
+          {img(first, "h-44")}
+          {img(rest[0]!, "h-44")}
         </span>
-      ))}
-    </span>
+      ) : (
+        <>
+          {img(first, "h-auto max-h-[28rem]")}
+          {row.length ? (
+            <span className="mt-0.5 grid grid-cols-3 gap-0.5">
+              {row.map((a, i) => (
+                <span key={a.id} className="relative">
+                  {img(a, "h-20")}
+                  {more > 0 && i === row.length - 1 ? (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-semibold text-white">+{more}</span>
+                  ) : null}
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </>
+      )}
+    </button>
   );
 }
 

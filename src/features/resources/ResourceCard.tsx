@@ -21,7 +21,7 @@ import { formatTimestamp } from "@/lib/dates";
 import { useDelete, useUpdate } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
-import { LinkNote } from "./LinkNote";
+import { LinkNote, NoteImages, useLinkImages } from "./LinkNote";
 import { ResourceDialog } from "./ResourceDialog";
 import { ResourceTypeIcon } from "./resourceMeta";
 
@@ -121,6 +121,8 @@ export function ResourceCard({
   const openCapture = useUi((s) => s.openCapture);
   const [editing, setEditing] = useState(false);
   const [noting, setNoting] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const images = useLinkImages(r.id);
   const host = hostOf(r.url);
   const loadingPreview = !r.previewFetchedAt;
   // Don't repeat the page's own title as its summary.
@@ -136,16 +138,21 @@ export function ResourceCard({
     <article
       id={`resource-${r.id}`}
       className={cn(
-        "group flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-[border-color,box-shadow] hover:border-primary/25 hover:shadow-pop",
+        "group mb-4 flex break-inside-avoid flex-col overflow-hidden rounded-xl border bg-card shadow-soft transition-[border-color,box-shadow] hover:border-primary/25 hover:shadow-pop",
         highlighted && "ring-2 ring-primary/50",
       )}
     >
-      <a href={r.url} target="_blank" rel="noreferrer noopener" className="relative block aspect-[1.91/1] overflow-hidden border-b bg-muted" tabIndex={-1} aria-hidden>
-        {loadingPreview && !r.previewImage ? <div className="size-full animate-pulse bg-muted" /> : <PreviewMedia r={r} />}
-        <span className="absolute top-2 left-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-          {RESOURCE_TYPE_LABELS[r.type]}
-        </span>
-      </a>
+      {/* Your own images lead the card, like Google Keep; otherwise the website's preview. */}
+      {images.length ? (
+        <NoteImages images={images} onOpen={() => setNoteOpen(true)} />
+      ) : (
+        <a href={r.url} target="_blank" rel="noreferrer noopener" className="relative block aspect-[1.91/1] overflow-hidden border-b bg-muted" tabIndex={-1} aria-hidden>
+          {loadingPreview && !r.previewImage ? <div className="size-full animate-pulse bg-muted" /> : <PreviewMedia r={r} />}
+          <span className="absolute top-2 left-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+            {RESOURCE_TYPE_LABELS[r.type]}
+          </span>
+        </a>
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col px-3.5 pt-3 pb-2.5">
         <div className="flex items-center gap-1.5 text-2xs text-muted-foreground">
@@ -169,7 +176,7 @@ export function ResourceCard({
         <TagList tags={r.tags} className="mt-2" />
 
         {/* Your own note on the link: text and images; opens bigger on click. */}
-        <LinkNote r={r} editing={noting} setEditing={setNoting} />
+        <LinkNote r={r} images={images} editing={noting} setEditing={setNoting} open={noteOpen} setOpen={setNoteOpen} />
 
         <div className="mt-auto flex items-center gap-1 pt-3">
           <span className="mr-auto truncate text-2xs text-muted-foreground" title={`Saved ${formatTimestamp(r.createdAt)}`}>
@@ -235,5 +242,6 @@ export function ResourceCard({
 
 /** The cards in a responsive grid. */
 export function ResourceGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
+  // Columns, like Google Keep: cards keep their own height (a tall screenshot stays tall).
+  return <div className="gap-4 sm:columns-2 xl:columns-3">{children}</div>;
 }
