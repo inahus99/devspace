@@ -459,6 +459,8 @@ export const attachments = pgTable(
     bookId: uuid("book_id").references(() => books.id, { onDelete: "cascade" }),
     /** Images placed on a drawing or notebook; deleted with it. */
     diagramId: uuid("diagram_id").references((): AnyPgColumn => diagrams.id, { onDelete: "cascade" }),
+    /** Images in a saved link's note; deleted with the link. */
+    resourceId: uuid("resource_id").references((): AnyPgColumn => resources.id, { onDelete: "cascade" }),
     storageKey: text("storage_key").notNull().unique(),
     fileName: text("file_name").notNull(),
     mimeType: text("mime_type").notNull(),
@@ -475,6 +477,7 @@ export const attachments = pgTable(
     index("attachments_lld_idx").on(t.lldExerciseId),
     index("attachments_book_idx").on(t.bookId),
     index("attachments_diagram_idx").on(t.diagramId),
+    index("attachments_resource_idx").on(t.resourceId),
   ],
 );
 

@@ -66,7 +66,7 @@ export async function buildBackupFiles(userId: string): Promise<Map<string, Back
   for (const a of data.attachments) {
     // Images on drawings go inside their .excalidraw file; book PDFs sit with their book below.
     if (a.label === BOOK_FILE_LABEL || a.diagramId) continue;
-    const standalone = !a.noteId && !a.dsaProblemId && !a.lldExerciseId && !a.bookId && a.label !== BANNER_LABEL;
+    const standalone = !a.noteId && !a.dsaProblemId && !a.lldExerciseId && !a.bookId && !a.resourceId && a.label !== BANNER_LABEL;
     const dir = standalone ? `${dirOf(a.workspaceId, a.folderId)}/files` : "_attachments";
     const ext = path.extname(a.fileName).toLowerCase().replace(/[^.a-z0-9]/g, "");
     const base = sanitizeName(path.basename(a.fileName, path.extname(a.fileName)), "file");
@@ -111,10 +111,17 @@ export async function buildBackupFiles(userId: string): Promise<Map<string, Back
     return m;
   };
   for (const [dir, rows] of group(data.resources)) {
+    const file = uniquePath(used, `${dir}/links`, ".md");
+    // Images in a link's note sit in _attachments/ and are shown under it.
+    const images = (id: string) =>
+      data.attachments
+        .filter((a) => a.resourceId === id && attachmentPath.has(a.id))
+        .map((a) => `\n  ![${a.fileName.replace(/[[\]]/g, "")}](${relLink(file, attachmentPath.get(a.id)!)})`)
+        .join("");
     const lines = rows
       .sort((a, b) => a.title.localeCompare(b.title))
-      .map((r) => `- [${r.title.replace(/[[\]]/g, "")}](${r.url}) · ${r.type}${r.status !== "unread" ? ` · ${r.status.replace("_", " ")}` : ""}${r.description ? `\n  ${r.description.replace(/\n/g, " ")}` : ""}`);
-    put(uniquePath(used, `${dir}/links`, ".md"), { text: `# Links\n\n${lines.join("\n")}\n` });
+      .map((r) => `- [${r.title.replace(/[[\]]/g, "")}](${r.url}) · ${r.type}${r.status !== "unread" ? ` · ${r.status.replace("_", " ")}` : ""}${r.description ? `\n  ${r.description.replace(/\n/g, " ")}` : ""}${images(r.id)}`);
+    put(file, { text: `# Links\n\n${lines.join("\n")}\n` });
   }
   for (const [dir, rows] of group(data.dsaProblems)) {
     const table = rows

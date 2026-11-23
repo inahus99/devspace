@@ -13,7 +13,6 @@ import { ActionMenus } from "@/components/layout/menu";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { DsaTracker } from "@/features/dsa/DsaTracker";
 import { LldList } from "@/features/lld/LldList";
 import { ItemNotFound } from "@/features/misc/NotFoundPage";
 import { WorkspaceActivities } from "@/features/planner/WorkspaceActivities";
@@ -56,12 +55,11 @@ export default function WorkspacePage() {
 
   const tabs = useMemo<WorkspaceTab[]>(() => {
     const special: WorkspaceTab[] = [];
-    if (ws?.kind === "dsa" || (summary?.dsaProblems ?? 0) > 0) special.push("dsa");
     if (ws?.kind === "lld" || (summary?.lldExercises ?? 0) > 0) special.push("lld");
     return ["contents", ...special, "files", "activities", "overview"];
-  }, [ws?.kind, summary?.dsaProblems, summary?.lldExercises]);
+  }, [ws?.kind, summary?.lldExercises]);
 
-  // Every workspace and folder opens on its topic page: sub-folders, screenshots, notes, code, links, questions.
+  // Every workspace and folder opens on its Contents tab.
   const defaultTab: WorkspaceTab = "contents";
   const requested = params.get("tab") as WorkspaceTab | null;
   const tab: WorkspaceTab = requested && tabs.includes(requested) ? requested : defaultTab;
@@ -153,7 +151,6 @@ export default function WorkspacePage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {ws.kind === "dsa" || tabs.includes("dsa") ? <DropdownMenuItem onSelect={() => capture("dsa")}>DSA problem</DropdownMenuItem> : null}
               {ws.kind === "lld" || tabs.includes("lld") ? <DropdownMenuItem onSelect={() => capture("lld")}>LLD exercise</DropdownMenuItem> : null}
               <DropdownMenuItem onSelect={() => capture("note")}>Note</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => capture("snippet")}>Code snippet</DropdownMenuItem>
@@ -161,7 +158,6 @@ export default function WorkspacePage() {
               <DropdownMenuItem onSelect={() => openCapture("book", { workspaceId: ws.id })}>Book</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => openCapture("activity", { workspaceId: ws.id })}>Activity</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setCreatingFolder(true)}>Folder</DropdownMenuItem>
-              {ws.kind !== "dsa" && !tabs.includes("dsa") ? <DropdownMenuItem onSelect={() => capture("dsa")}>DSA problem</DropdownMenuItem> : null}
               {ws.kind !== "lld" && !tabs.includes("lld") ? <DropdownMenuItem onSelect={() => capture("lld")}>LLD exercise</DropdownMenuItem> : null}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -243,10 +239,9 @@ export default function WorkspacePage() {
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
-                    ["dsa", summary?.dsaProblems],
                     ["lld", summary?.lldExercises],
                   ] as const
-                ).map(([t, n]) => (
+                ).filter(([t]) => tabs.includes(t)).map(([t, n]) => (
                   <button key={t} type="button" onClick={() => setTab(t)} className="rounded-xl border bg-card shadow-soft px-3 py-2 text-left hover:bg-accent/50">
                     <div className="text-lg font-semibold tabular">{n ?? 0}</div>
                     <div className="text-xs text-muted-foreground">{TAB_LABELS[t]}</div>
@@ -274,8 +269,6 @@ export default function WorkspacePage() {
               <p className="px-2 pt-2 text-2xs text-muted-foreground">Drag folders onto each other to nest them. Right-click for more.</p>
             </Section>
           </div>
-        ) : tab === "dsa" ? (
-          <DsaTracker workspaceId={ws.id} folderId={folder?.id ?? null} />
         ) : tab === "lld" ? (
           <LldList workspaceId={ws.id} folderId={folder?.id ?? null} />
         ) : tab === "files" ? (

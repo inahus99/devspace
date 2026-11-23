@@ -12,7 +12,10 @@ export function InlineNoteEditor({
   allowEmpty = false,
   maxLength = 2000,
   className = "",
+  onPasteFiles,
 }: {
+  /** Images pasted into the box (Ctrl+V a screenshot). */
+  onPasteFiles?: (files: File[]) => void;
   initial?: string;
   pending: boolean;
   onSave: (body: string) => Promise<void>;
@@ -39,6 +42,13 @@ export function InlineNoteEditor({
         rows={3}
         onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
         onChange={(e) => setBody(e.target.value)}
+        onPaste={(e) => {
+          if (!onPasteFiles) return;
+          const files = [...e.clipboardData.files].filter((f) => f.type.startsWith("image/"));
+          if (!files.length) return;
+          e.preventDefault();
+          onPasteFiles(files);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();

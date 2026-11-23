@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne } from "drizzle-orm";
 import { BANNER_LABEL } from "../lib/images.ts";
 import { Router } from "express";
 import multer from "multer";
@@ -45,15 +45,17 @@ export const attachmentsRouter = Router();
 attachmentsRouter.get("/", async (req, res) => {
   const userId = uid(req);
   const where = [eq(attachments.userId, userId)];
-  for (const key of ["noteId", "dsaProblemId", "lldExerciseId", "bookId", "diagramId", "workspaceId", "label"] as const) {
+  for (const key of ["noteId", "dsaProblemId", "lldExerciseId", "bookId", "diagramId", "resourceId", "workspaceId", "label"] as const) {
     const v = qs(req, key);
     if (v) where.push(eq(attachments[key], v));
   }
+  // Every image in any saved link's note, for a page of link cards (one request instead of one per card).
+  if (qs(req, "forResources") === "1") where.push(isNotNull(attachments.resourceId));
   const folder = qs(req, "folderId");
   if (folder) where.push(folder === "root" ? isNull(attachments.folderId) : eq(attachments.folderId, folder));
   // Workspace "Files" view: only standalone files, not ones embedded in notes etc.
   if (qs(req, "standalone") === "1") {
-    where.push(isNull(attachments.noteId), isNull(attachments.dsaProblemId), isNull(attachments.lldExerciseId), isNull(attachments.bookId), isNull(attachments.diagramId), ne(attachments.label, BANNER_LABEL));
+    where.push(isNull(attachments.noteId), isNull(attachments.dsaProblemId), isNull(attachments.lldExerciseId), isNull(attachments.bookId), isNull(attachments.diagramId), isNull(attachments.resourceId), ne(attachments.label, BANNER_LABEL));
   }
   const rows = await db
     .select()
@@ -78,6 +80,7 @@ attachmentsRouter.post("/", upload.single("file"), async (req, res) => {
       [target.lldExerciseId, schema.lldExercises],
       [target.bookId, schema.books],
       [target.diagramId, schema.diagrams],
+      [target.resourceId, schema.resources],
     ] as const;
     for (const [id, table] of owners) {
       if (!id) continue;
@@ -108,6 +111,7 @@ attachmentsRouter.post("/", upload.single("file"), async (req, res) => {
         lldExerciseId: target.lldExerciseId ?? null,
         bookId: target.bookId ?? null,
         diagramId: target.diagramId ?? null,
+        resourceId: target.resourceId ?? null,
         storageKey,
         fileName,
         mimeType: mime,

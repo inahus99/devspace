@@ -1,12 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, Ellipsis, ExternalLink, Pencil, Plus, StickyNote, Star, Trash2 } from "lucide-react";
+import { CalendarPlus, Ellipsis, ExternalLink, Pencil, StickyNote, Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RESOURCE_STATUS_LABELS, RESOURCE_STATUSES, RESOURCE_TYPE_LABELS } from "@shared/constants";
 import type { Resource, Workspace } from "@shared/types";
 import { hostOf, youtubeId } from "@shared/url";
 import { confirm } from "@/components/common/ConfirmDialog";
 import { TagList } from "@/components/common/fields";
-import { InlineNoteEditor } from "@/components/common/InlineNoteEditor";
 import { ResourceStatusPill } from "@/components/common/Pill";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +21,7 @@ import { formatTimestamp } from "@/lib/dates";
 import { useDelete, useUpdate } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useUi } from "@/stores/ui";
+import { LinkNote } from "./LinkNote";
 import { ResourceDialog } from "./ResourceDialog";
 import { ResourceTypeIcon } from "./resourceMeta";
 
@@ -168,45 +168,8 @@ export function ResourceCard({
         {summary ? <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{summary}</p> : null}
         <TagList tags={r.tags} className="mt-2" />
 
-        {/* Your own note on the link: why it's useful, what to read in it. */}
-        <div className="mt-2.5">
-          {noting ? (
-            <InlineNoteEditor
-              initial={r.description}
-              allowEmpty
-              maxLength={5000}
-              pending={update.isPending}
-              placeholder="Why it's useful, which part to read, what you took from it…"
-              onCancel={() => setNoting(false)}
-              onSave={async (description) => {
-                const ok = await update.mutateAsync({ id: r.id, description }).then(
-                  () => true,
-                  () => false,
-                );
-                if (ok) setNoting(false);
-              }}
-            />
-          ) : r.description ? (
-            <button
-              type="button"
-              onClick={() => setNoting(true)}
-              title="Edit your note"
-              className="group/note flex w-full gap-2 rounded-lg border border-warning/25 bg-warning/8 px-2.5 py-2 text-left hover:border-warning/45"
-            >
-              <StickyNote className="mt-0.5 size-3.5 shrink-0 text-warning" />
-              <span className="line-clamp-4 flex-1 text-xs leading-relaxed whitespace-pre-wrap">{r.description}</span>
-              <Pencil className="mt-0.5 size-3 shrink-0 text-muted-foreground opacity-0 group-hover/note:opacity-100" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setNoting(true)}
-              className="flex items-center gap-1 rounded-md text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Plus className="size-3.5" /> Add a note
-            </button>
-          )}
-        </div>
+        {/* Your own note on the link: text and images; opens bigger on click. */}
+        <LinkNote r={r} editing={noting} setEditing={setNoting} />
 
         <div className="mt-auto flex items-center gap-1 pt-3">
           <span className="mr-auto truncate text-2xs text-muted-foreground" title={`Saved ${formatTimestamp(r.createdAt)}`}>

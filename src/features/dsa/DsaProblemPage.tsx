@@ -101,7 +101,7 @@ function ProblemEditor({ problem }: { problem: DsaProblem }) {
     autosave.schedule({ [key]: v } as TextPatch);
   };
 
-  const backHref = routes.workspace(problem.workspaceId, { tab: "dsa" });
+  const backHref = routes.workspace(problem.workspaceId);
 
   const remove = async () => {
     const ok = await confirm({

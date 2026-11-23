@@ -320,6 +320,7 @@ export type UploadTarget = {
   lldExerciseId?: string;
   bookId?: string;
   diagramId?: string;
+  resourceId?: string;
   label?: string;
 };
 
