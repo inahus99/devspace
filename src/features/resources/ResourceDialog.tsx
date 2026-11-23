@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
+import { type ClipboardEvent, type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   RESOURCE_STATUS_LABELS,
@@ -17,7 +18,10 @@ import { AutoTextarea } from "@/components/common/Markdown";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useCreate, useUpdate } from "@/lib/queries";
+import { useCreate, useUpdate, useUpload } from "@/lib/queries";
+import { useLinkImages } from "./LinkNote";
+
+type PendingImage = { id: string; file: File; preview: string };
 
 interface FormState {
   url: string;
@@ -64,6 +68,26 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
   const create = useCreate("resources");
   const update = useUpdate("resources");
   const urlRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const upload = useUpload();
+  const saved = useLinkImages(resource?.id ?? "");
+  // Images added before saving; they upload once the link exists.
+  const [images, setImages] = useState<PendingImage[]>([]);
+  const clearImages = () =>
+    setImages((list) => {
+      for (const i of list) URL.revokeObjectURL(i.preview);
+      return [];
+    });
+  const addImages = (files: File[]) => {
+    const add = files.filter((f) => f.type.startsWith("image/")).map((file) => ({ id: crypto.randomUUID(), file, preview: URL.createObjectURL(file) }));
+    if (add.length) setImages((list) => [...list, ...add]);
+  };
+  const onPaste = (e: ClipboardEvent) => {
+    const files = [...e.clipboardData.files].filter((f) => f.type.startsWith("image/"));
+    if (!files.length) return; // ordinary text paste
+    e.preventDefault();
+    addImages(files);
+  };
 
   useEffect(() => {
     if (open) {
@@ -71,9 +95,12 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
       setTitleTouched(!!resource);
       setTypeTouched(!!resource);
       setError(null);
+      clearImages();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, resource?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => clearImages, []);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -108,25 +135,22 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
       tags: form.tags,
     };
     try {
-      if (resource) {
-        await update.mutateAsync({ id: resource.id, ...payload });
-        toast.success("Resource updated");
-      } else {
-        await create.mutateAsync(payload);
-        toast.success("Resource saved to library");
-      }
+      const row = resource ? await update.mutateAsync({ id: resource.id, ...payload }) : await create.mutateAsync(payload);
+      for (const img of images) await upload.mutateAsync({ file: img.file, target: { resourceId: row.id } }).catch(() => null);
+      toast.success(resource ? "Resource updated" : "Resource saved to library");
+      clearImages();
       onOpenChange(false);
     } catch {
       /* toast shown by hook */
     }
   };
 
-  const pending = create.isPending || update.isPending;
+  const pending = create.isPending || update.isPending || upload.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
-        <form onSubmit={submit} className="grid gap-4">
+        <form onSubmit={submit} onPaste={onPaste} className="grid gap-4">
           <DialogHeader>
             <DialogTitle>{resource ? "Edit resource" : "Save a resource"}</DialogTitle>
             <DialogDescription>Paste a link — type and title are detected from the URL.</DialogDescription>
@@ -184,8 +208,51 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
               <FolderSelect workspaceId={form.workspaceId} value={form.folderId} onChange={(v) => set("folderId", v)} rootLabel="No folder" />
             </Field>
           </div>
-          <Field label="Description" htmlFor="res-desc">
-            <AutoTextarea id="res-desc" value={form.description} onChange={(v) => set("description", v)} minRows={2} placeholder="Why is this worth keeping?" />
+          <Field label="Note" htmlFor="res-desc">
+            <AutoTextarea
+              id="res-desc"
+              value={form.description}
+              onChange={(v) => set("description", v)}
+              minRows={2}
+              placeholder="Why is this worth keeping? Paste a screenshot here too (Ctrl+V)."
+            />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                addImages([...(e.target.files ?? [])]);
+                e.target.value = "";
+              }}
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {saved.map((a) => (
+                <img key={a.id} src={a.url} alt="" className="size-14 rounded-md border object-cover" />
+              ))}
+              {images.map((img) => (
+                <span key={img.id} className="relative">
+                  <img src={img.preview} alt="" className="size-14 rounded-md border object-cover" />
+                  <button
+                    type="button"
+                    aria-label="Remove image"
+                    onClick={() =>
+                      setImages((list) => {
+                        URL.revokeObjectURL(img.preview);
+                        return list.filter((i) => i.id !== img.id);
+                      })
+                    }
+                    className="absolute -top-1.5 -right-1.5 rounded-full border bg-background p-0.5 text-muted-foreground shadow-sm hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+              <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => fileRef.current?.click()}>
+                <ImagePlus /> Add image
+              </Button>
+            </div>
           </Field>
           <Field label="Tags">
             <TagInput value={form.tags} onChange={(v) => set("tags", v)} />
