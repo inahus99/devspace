@@ -1,6 +1,7 @@
-import { Check, Pencil, Plus, Star, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { Memo, Resource } from "@shared/types";
+import { InlineNoteEditor } from "@/components/common/InlineNoteEditor";
 import { Button } from "@/components/ui/button";
 import { timeAgo } from "@/lib/dates";
 import { useCreate, useDelete, useUpdate } from "@/lib/queries";
@@ -53,6 +54,8 @@ export function FavoriteResources({ resources }: { resources: Resource[] }) {
   );
 }
 
+const MEMO_PLACEHOLDER = "How you're approaching this, which resources are working for you…";
+
 /** How many memos a card shows before "Show all". */
 const SHOWN = 3;
 
@@ -81,7 +84,8 @@ export function WorkspaceMemos({ workspaceId, memos }: { workspaceId: string; me
         </button>
       ) : null}
       {adding ? (
-        <MemoEditor
+        <InlineNoteEditor
+          placeholder={MEMO_PLACEHOLDER}
           className={memos.length ? "mt-2" : ""}
           pending={create.isPending}
           onCancel={() => setAdding(false)}
@@ -114,7 +118,8 @@ function MemoItem({ memo }: { memo: Memo }) {
   if (editing) {
     return (
       <li>
-        <MemoEditor
+        <InlineNoteEditor
+          placeholder={MEMO_PLACEHOLDER}
           initial={memo.body}
           pending={update.isPending}
           onCancel={() => setEditing(false)}
@@ -151,59 +156,5 @@ function MemoItem({ memo }: { memo: Memo }) {
         </Button>
       </div>
     </li>
-  );
-}
-
-function MemoEditor({
-  initial = "",
-  pending,
-  onSave,
-  onCancel,
-  className = "",
-}: {
-  initial?: string;
-  pending: boolean;
-  onSave: (body: string) => Promise<void>;
-  onCancel: () => void;
-  className?: string;
-}) {
-  const [body, setBody] = useState(initial);
-  const save = () => {
-    const text = body.trim();
-    if (!text) return onCancel();
-    if (text === initial.trim()) return onCancel();
-    void onSave(text);
-  };
-  return (
-    <div className={className}>
-      <textarea
-        autoFocus
-        value={body}
-        maxLength={2000}
-        rows={3}
-        onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
-        onChange={(e) => setBody(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            save();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            onCancel();
-          }
-        }}
-        placeholder="How you're approaching this, which resources are working for you…"
-        className="w-full resize-y rounded-md border bg-background px-2.5 py-1.5 text-xs leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-      />
-      <div className="mt-1 flex items-center justify-end gap-1">
-        <span className="mr-auto text-[10px] text-muted-foreground">Ctrl+Enter to save · Esc to cancel</span>
-        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onCancel}>
-          <X /> Cancel
-        </Button>
-        <Button size="sm" className="h-6 px-2 text-xs" onClick={save} disabled={pending}>
-          <Check /> Save
-        </Button>
-      </div>
-    </div>
   );
 }

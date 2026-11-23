@@ -1,4 +1,4 @@
-import { BookOpen, BookOpenText, ChevronDown, Code2, ExternalLink, FileText, PenLine, Plus, Shapes } from "lucide-react";
+import { BookOpen, BookOpenText, ChevronDown, Code2, FileText, PenLine, Plus, Shapes } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { BOOK_FILE_LABEL } from "@/features/books/bookFile";
 import { NoteCreateDialog } from "@/features/notes/NoteCreateDialog";
 import { SnippetDialog } from "@/features/snippets/SnippetDialog";
+import { ResourceCard, ResourceGrid } from "@/features/resources/ResourceCard";
 import { AddLinkForm } from "./AddLinkForm";
 import { timeAgo } from "@/lib/dates";
 import { useAttachments, useCreate, useList } from "@/lib/queries";
@@ -288,21 +289,11 @@ export function FolderLinks({ place }: { place: Place }) {
       {list.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">No links here yet. Paste one above.</p>
       ) : (
-        <ul className="divide-y rounded-xl border bg-card shadow-soft">
+        <ResourceGrid>
           {list.map((r) => (
-            <li key={r.id}>
-              <a href={r.url} target="_blank" rel="noreferrer noopener" className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50">
-                <ExternalLink className="mt-0.5 size-4 shrink-0 text-primary" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{r.title}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{r.url.replace(/^https?:\/\//, "")}</span>
-                  {r.description ? <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{r.description}</span> : null}
-                </span>
-                <span className="shrink-0 text-2xs text-muted-foreground">{r.type}</span>
-              </a>
-            </li>
+            <ResourceCard key={r.id} resource={r} />
           ))}
-        </ul>
+        </ResourceGrid>
       )}
     </TabBody>
   );

@@ -344,6 +344,14 @@ export const resources = pgTable(
     status: resourceStatus("status").notNull().default("unread"),
     isFavorite: boolean("is_favorite").notNull().default(false),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    // Link preview read from the page's own tags (og:image, title, description, icon).
+    previewImage: text("preview_image"),
+    previewTitle: text("preview_title"),
+    previewDescription: text("preview_description"),
+    siteName: text("site_name"),
+    faviconUrl: text("favicon_url"),
+    /** When the preview was last looked up; null means not yet (the client asks for it). */
+    previewFetchedAt: timestamp("preview_fetched_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

@@ -64,6 +64,13 @@
       "when": 1795195559083,
       "tag": "0008_workspace_memos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795445262031,
+      "tag": "0009_resource_previews",
+      "breakpoints": true
     }
   ]
 }

@@ -26,9 +26,10 @@ import {
   snippetUpdateSchema,
 } from "../../shared/schemas.ts";
 import { addDaysISO } from "../../shared/time.ts";
-import { detectResourceType } from "../../shared/url.ts";
+import { detectResourceType, hostOf } from "../../shared/url.ts";
 import { db, schema } from "../db/index.ts";
 import { crudRouter } from "../lib/crud.ts";
+import { fetchLinkPreview } from "../lib/linkPreview.ts";
 import { localToday, notFound, param, parse, qs, uid } from "../lib/http.ts";
 import { verifyRefs } from "../lib/refs.ts";
 import { scheduleDrain } from "../storage.ts";
@@ -149,8 +150,43 @@ export const resourcesRouter = crudRouter({
     if (values.status !== undefined && values.status !== existing?.status) {
       values.completedAt = values.status === "completed" ? new Date() : null;
     }
+    // A new address needs a new preview; the client asks for it.
+    if (existing && values.url !== undefined && values.url !== existing.url) {
+      Object.assign(values, { previewImage: null, previewTitle: null, previewDescription: null, siteName: null, faviconUrl: null, previewFetchedAt: null });
+    }
     return values;
   },
+});
+
+/**
+ * POST /resources/:id/preview: read the page's title, summary, image and icon and keep them.
+ * A link saved with just its address (its title is the site name) also takes the page's title.
+ */
+resourcesRouter.post("/:id/preview", async (req, res) => {
+  const userId = uid(req);
+  const id = param(req);
+  const [row] = await db.select().from(resources).where(and(eq(resources.id, id), eq(resources.userId, userId))).limit(1);
+  if (!row) throw notFound();
+  const preview = await fetchLinkPreview(row.url).catch(() => null);
+  // Keep updatedAt: looking up a preview isn't an edit.
+  const values: Partial<typeof resources.$inferInsert> = { previewFetchedAt: new Date(), updatedAt: row.updatedAt };
+  if (preview) {
+    Object.assign(values, {
+      previewImage: preview.image,
+      previewTitle: preview.title,
+      previewDescription: preview.description,
+      siteName: preview.siteName,
+      faviconUrl: preview.favicon,
+    });
+    const placeholder = row.title === row.url || row.title === hostOf(row.url);
+    if (placeholder && preview.title) values.title = preview.title;
+  }
+  const [updated] = await db
+    .update(resources)
+    .set(values)
+    .where(and(eq(resources.id, id), eq(resources.userId, userId)))
+    .returning();
+  res.json(updated);
 });
 
 // ---------------------------------------------------------------------------
