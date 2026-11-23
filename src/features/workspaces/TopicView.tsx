@@ -1,13 +1,11 @@
 import {
+  ArrowRight,
   BookOpen,
-  Boxes,
   ChevronRight,
-  ExternalLink,
   Folder as FolderIcon,
   FolderOpen,
   FolderPlus,
   FolderTree,
-  HelpCircle,
   LayoutGrid,
   NotebookPen,
   type LucideIcon,
@@ -16,13 +14,7 @@ import {
 import { type FormEvent, type ReactNode, useMemo, useState } from "react";
 import { Link } from "react-router";
 import type { Folder, Workspace } from "@shared/types";
-import { AttachmentsPanel } from "@/components/common/Attachments";
-import {
-  BookStatusPill,
-  DifficultyPill,
-  DsaStatusPill,
-  LldStatusPill,
-} from "@/components/common/Pill";
+import { BookStatusPill } from "@/components/common/Pill";
 import { Spinner } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,13 +28,9 @@ import { cn } from "@/lib/utils";
 import type { CaptureKind } from "@/stores/ui";
 
 /**
- * A topic page for a workspace or folder, laid out like a study notebook:
- * sub-topics as cards (e.g. one folder per DP pattern, or per HLD chapter), then the pages,
- * scans and screenshots, notes, links and kind-specific sections that live directly here.
- *
- * Sections follow the workspace kind: DSA gets pseudocode and questions, LLD gets code and
- * design exercises, a general workspace (HLD, system design, ...) gets books on its main page.
- * Any section that already has items in this folder is always shown.
+ * The Contents tab of a workspace or folder: the way into its notes (which live in the Notes
+ * app), its sub-folders as cards, and on a workspace's main page its books.
+ * Questions, design exercises and files have their own tabs.
  */
 export function TopicView({
   workspace,
@@ -70,10 +58,6 @@ export function TopicView({
   const children = folders
     .filter((f) => f.parentId === here)
     .sort((a, b) => a.position - b.position);
-  const inHere = <T extends { folderId: string | null }>(
-    rows: T[] | undefined,
-  ) => (rows ?? []).filter((r) => r.folderId === here);
-
   const cardInfo = useMemo(() => {
     const count = new Map<string, number>();
     const bump = (rows: { folderId: string | null }[] | undefined) => {
@@ -102,13 +86,9 @@ export function TopicView({
     diagrams.data,
   ]);
 
-  const hereQuestions = inHere(questions.data);
-  const hereExercises = inHere(exercises.data);
   const wsBooks = folder ? [] : (books.data ?? []);
   const title = folder?.name ?? workspace.name;
 
-  const showQuestions = kind === "dsa" || hereQuestions.length > 0;
-  const showExercises = kind === "lld" || hereExercises.length > 0;
   const showBooks = !folder && (kind === "general" || wsBooks.length > 0);
 
   const sections: ReactNode[] = [];
@@ -160,75 +140,27 @@ export function TopicView({
         })}
       </TopicSection>,
     );
-  if (showExercises)
-    sections.push(
-      <TopicSection
-        key="lld"
-        icon={Boxes}
-        title="Design exercises"
-        count={hereExercises.length}
-        loading={exercises.isLoading}
-        onAdd={() => capture("lld")}
-        addLabel="Exercise"
-        empty="Design problems to work through."
-      >
-        {hereExercises.map((x) => (
-          <li key={x.id}>
-            <Link
-              to={routes.lld(x.id)}
-              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-accent/60"
-            >
-              <span className="truncate text-sm">{x.title}</span>
-              <LldStatusPill status={x.status} />
-            </Link>
-          </li>
-        ))}
-      </TopicSection>,
-    );
-  if (showQuestions)
-    sections.push(
-      <TopicSection
-        key="questions"
-        icon={HelpCircle}
-        title="Questions"
-        count={hereQuestions.length}
-        loading={questions.isLoading}
-        onAdd={() => capture("dsa")}
-        addLabel="Question"
-        empty="Problems that use this pattern."
-      >
-        {hereQuestions.map((q) => (
-          <li
-            key={q.id}
-            className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-accent/60"
-          >
-            <Link to={routes.dsa(q.id)} className="min-w-0 flex-1">
-              <span className="block truncate text-sm">{q.title}</span>
-              <span className="mt-0.5 flex items-center gap-1.5 text-2xs text-muted-foreground">
-                {q.platform || "Problem"}
-                {q.topic ? ` · ${q.topic}` : ""}
-              </span>
-            </Link>
-            <DifficultyPill difficulty={q.difficulty} />
-            {q.status !== "todo" ? <DsaStatusPill status={q.status} /> : null}
-            {q.url ? (
-              <a
-                href={q.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                aria-label={`Open ${q.title}`}
-              >
-                <ExternalLink className="size-3.5" />
-              </a>
-            ) : null}
-          </li>
-        ))}
-      </TopicSection>,
-    );
+  const notesHref = here ? routes.notebooks(here, { tab: "notes" }) : routes.notesWorkspace(workspace.id);
 
   return (
     <div className="space-y-6">
+      {/* Writing happens in the Notes app; this is the one way in. */}
+      <Link
+        to={notesHref}
+        className="group flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-soft transition-colors hover:border-primary/40 sm:flex-row sm:items-center"
+      >
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
+          <NotebookPen className="size-6" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-semibold">Your notes for {title}</span>
+          <span className="mt-0.5 block text-sm text-muted-foreground">Notebook, notes, drawings, code and links are all in the Notes app.</span>
+        </span>
+        <span className="inline-flex h-9 shrink-0 items-center gap-1.5 self-start rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-transform group-hover:translate-x-0.5 sm:self-auto">
+          Go to Notes <ArrowRight className="size-4" />
+        </span>
+      </Link>
+
       <SubTopics
         workspaceId={workspace.id}
         parentId={here}
@@ -240,46 +172,7 @@ export function TopicView({
         onOpen={onOpenFolder}
       />
 
-      <AttachmentsPanel
-        target={{ workspaceId: workspace.id, folderId: here }}
-        query={{ workspaceId: workspace.id, folderId: here ?? "root" }}
-        standalone
-        gallery
-        title={
-          kind === "dsa"
-            ? "Overview & screenshots"
-            : "Pages, scans & screenshots"
-        }
-        emptyHint={
-          kind === "dsa"
-            ? children.length
-              ? `Paste a screenshot (Ctrl+V), drop an image, or upload, e.g. a cheat sheet of every ${title} pattern.`
-              : "Paste a screenshot (Ctrl+V), drop an image, or upload: diagrams, dry runs, whiteboard photos."
-            : "Photos of handwritten pages, scanned PDFs, diagrams or screenshots. Paste (Ctrl+V), drop, or upload; on a phone, Upload can open the camera."
-        }
-      />
-
-      <Link
-        to={here ? routes.notebooks(here, { tab: "notes" }) : routes.notesWorkspace(workspace.id)}
-        className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-soft transition-colors hover:border-primary/30 hover:bg-accent/40"
-      >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
-          <NotebookPen className="size-4" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">Notebooks, notes, drawings, code & links</span>
-          <span className="block truncate text-xs text-muted-foreground">
-            Everything you write for {title} lives in the Notes app.
-          </span>
-        </span>
-        <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
-      </Link>
-
-
-      {/* An odd last section spans the full width so the grid never ends on a half-empty row. */}
-      <div className="grid gap-6 lg:grid-cols-2 lg:[&>*:last-child:nth-child(odd)]:col-span-2">
-        {sections}
-      </div>
+      {sections}
     </div>
   );
 }
