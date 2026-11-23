@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { ConfirmHost } from "@/components/common/ConfirmDialog";
 import { FullPageSpinner } from "@/components/common/states";
 import { AppShell } from "@/components/layout/AppShell";
+import { QuickCaptureHost } from "@/components/layout/QuickCaptureHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { ThemeSync } from "@/hooks/useTheme";
@@ -59,9 +60,13 @@ function RequireAuthBare() {
   if (isLoading || sso) return <FullPageSpinner />;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return (
-    <Suspense fallback={<FullPageSpinner />}>
-      <Outlet />
-    </Suspense>
+    <>
+      <Suspense fallback={<FullPageSpinner />}>
+        <Outlet />
+      </Suspense>
+      {/* AppShell hosts the create dialogs in DevSpace; these pages need their own. */}
+      <QuickCaptureHost />
+    </>
   );
 }
 
