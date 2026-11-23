@@ -33,7 +33,6 @@ export function isHttpUrl(value: string): boolean {
     return false;
   }
 }
-const zUrl = z.string().trim().max(2048).refine(isHttpUrl, "Enter a valid http(s) URL");
 const zOptUrl = z
   .string()
   .trim()
@@ -164,7 +163,8 @@ export const resourceCreateSchema = z.object({
   workspaceId: zOptId,
   folderId: zOptId,
   title: z.string().trim().min(1, "Title is required").max(300),
-  url: zUrl,
+  /** Empty for a note without a link (just text and/or images, like a Keep note). */
+  url: zOptUrl.default(""),
   description: text(5000).optional(),
   type: z.enum(RESOURCE_TYPES).optional(),
   status: z.enum(RESOURCE_STATUSES).optional(),

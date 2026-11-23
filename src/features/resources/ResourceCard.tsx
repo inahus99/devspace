@@ -34,7 +34,7 @@ const asked = new Set<string>();
 function usePreviewLookup(r: Resource) {
   const qc = useQueryClient();
   useEffect(() => {
-    if (r.previewFetchedAt || asked.has(r.id)) return;
+    if (!r.url || r.previewFetchedAt || asked.has(r.id)) return;
     asked.add(r.id);
     void api
       .post(`/resources/${r.id}/preview`)
@@ -145,7 +145,7 @@ export function ResourceCard({
       {/* Your own images lead the card, like Google Keep; otherwise the website's preview. */}
       {images.length ? (
         <NoteImages images={images} onOpen={() => setNoteOpen(true)} />
-      ) : (
+      ) : !r.url ? null : (
         <a href={r.url} target="_blank" rel="noreferrer noopener" className="relative block aspect-[1.91/1] overflow-hidden border-b bg-muted" tabIndex={-1} aria-hidden>
           {loadingPreview && !r.previewImage ? <div className="size-full animate-pulse bg-muted" /> : <PreviewMedia r={r} />}
           <span className="absolute top-2 left-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
@@ -156,8 +156,16 @@ export function ResourceCard({
 
       <div className="flex min-h-0 flex-1 flex-col px-3.5 pt-3 pb-2.5">
         <div className="flex items-center gap-1.5 text-2xs text-muted-foreground">
-          <SiteIcon src={r.faviconUrl} className="size-3.5" />
-          <span className="truncate">{r.siteName ?? host}</span>
+          {r.url ? (
+            <>
+              <SiteIcon src={r.faviconUrl} className="size-3.5" />
+              <span className="truncate">{r.siteName ?? host}</span>
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <StickyNote className="size-3.5 text-warning" /> Note
+            </span>
+          )}
           {workspace ? (
             <>
               <span aria-hidden>·</span>
@@ -169,9 +177,15 @@ export function ResourceCard({
           ) : null}
         </div>
 
-        <a href={r.url} target="_blank" rel="noreferrer noopener" className="mt-1 line-clamp-2 text-sm leading-snug font-semibold hover:text-primary" title={r.title}>
-          {r.title}
-        </a>
+        {r.url ? (
+          <a href={r.url} target="_blank" rel="noreferrer noopener" className="mt-1 line-clamp-2 text-sm leading-snug font-semibold hover:text-primary" title={r.title}>
+            {r.title}
+          </a>
+        ) : (
+          <button type="button" onClick={() => setNoteOpen(true)} className="mt-1 line-clamp-2 text-left text-sm leading-snug font-semibold hover:text-primary" title={r.title}>
+            {r.title}
+          </button>
+        )}
         {summary ? <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{summary}</p> : null}
         <TagList tags={r.tags} className="mt-2" />
 
@@ -213,11 +227,13 @@ export function ResourceCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <a href={r.url} target="_blank" rel="noreferrer noopener">
-                  <ExternalLink /> Open link
-                </a>
-              </DropdownMenuItem>
+              {r.url ? (
+                <DropdownMenuItem asChild>
+                  <a href={r.url} target="_blank" rel="noreferrer noopener">
+                    <ExternalLink /> Open link
+                  </a>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={() => setNoting(true)}>
                 <StickyNote /> {r.description ? "Edit note" : "Add a note"}
               </DropdownMenuItem>

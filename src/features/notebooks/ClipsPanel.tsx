@@ -212,7 +212,7 @@ export function ClipsPanel({
           </div>
         </ClipSection>
 
-        <ClipSection icon={<Link2 className="size-3.5" />} title="Links" count={links.data?.length ?? 0} empty="">
+        <ClipSection icon={<Link2 className="size-3.5" />} title="Links" count={links.data?.filter((r) => r.url).length ?? 0} empty="">
           <AddLinkForm
             pending={createLink.isPending}
             onAdd={async (url) => {
@@ -228,7 +228,7 @@ export function ClipsPanel({
             }}
           />
           <div className="space-y-1">
-            {(links.data ?? []).map((r) => (
+            {(links.data ?? []).filter((r) => r.url).map((r) => (
               <button
                 key={r.id}
                 type="button"

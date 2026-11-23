@@ -120,7 +120,7 @@ export async function buildBackupFiles(userId: string): Promise<Map<string, Back
         .join("");
     const lines = rows
       .sort((a, b) => a.title.localeCompare(b.title))
-      .map((r) => `- [${r.title.replace(/[[\]]/g, "")}](${r.url}) · ${r.type}${r.status !== "unread" ? ` · ${r.status.replace("_", " ")}` : ""}${r.description ? `\n  ${r.description.replace(/\n/g, " ")}` : ""}${images(r.id)}`);
+      .map((r) => `- ${r.url ? `[${r.title.replace(/[[\]]/g, "")}](${r.url}) · ${r.type}` : `**${r.title}** · note`}${r.status !== "unread" ? ` · ${r.status.replace("_", " ")}` : ""}${r.description ? `\n  ${r.description.replace(/\n/g, " ")}` : ""}${images(r.id)}`);
     put(file, { text: `# Links\n\n${lines.join("\n")}\n` });
   }
   for (const [dir, rows] of group(data.dsaProblems)) {

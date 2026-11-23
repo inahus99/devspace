@@ -167,7 +167,7 @@ resourcesRouter.post("/:id/preview", async (req, res) => {
   const id = param(req);
   const [row] = await db.select().from(resources).where(and(eq(resources.id, id), eq(resources.userId, userId))).limit(1);
   if (!row) throw notFound();
-  const preview = await fetchLinkPreview(row.url).catch(() => null);
+  const preview = row.url ? await fetchLinkPreview(row.url).catch(() => null) : null;
   // Keep updatedAt: looking up a preview isn't an edit.
   const values: Partial<typeof resources.$inferInsert> = { previewFetchedAt: new Date(), updatedAt: row.updatedAt };
   if (preview) {

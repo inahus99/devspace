@@ -489,9 +489,11 @@ function RecentResources({ data }: { data: DashboardResponse | undefined }) {
                 ) : null}
               </span>
             </Link>
-            <a href={r.url} target="_blank" rel="noreferrer noopener" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label={`Open ${r.title}`}>
-              <ExternalLink className="size-3.5" />
-            </a>
+            {r.url ? (
+              <a href={r.url} target="_blank" rel="noreferrer noopener" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label={`Open ${r.title}`}>
+                <ExternalLink className="size-3.5" />
+              </a>
+            ) : null}
           </li>
         );
       })}

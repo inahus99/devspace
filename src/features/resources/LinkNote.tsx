@@ -184,11 +184,15 @@ function LinkNoteDialog({ r, images, onClose }: { r: Resource; images: Attachmen
           {r.previewImage ? <img src={r.previewImage} alt="" referrerPolicy="no-referrer" className="hidden h-16 w-28 shrink-0 rounded-md border object-cover sm:block" /> : null}
           <div className="min-w-0 flex-1">
             <DialogTitle className="text-base leading-snug">{r.title}</DialogTitle>
-            <DialogDescription asChild>
-              <a href={r.url} target="_blank" rel="noreferrer noopener" className="mt-1 inline-flex items-center gap-1 text-xs hover:text-primary">
-                {r.siteName ?? hostOf(r.url)} <ExternalLink className="size-3" />
-              </a>
-            </DialogDescription>
+            {r.url ? (
+              <DialogDescription asChild>
+                <a href={r.url} target="_blank" rel="noreferrer noopener" className="mt-1 inline-flex items-center gap-1 text-xs hover:text-primary">
+                  {r.siteName ?? hostOf(r.url)} <ExternalLink className="size-3" />
+                </a>
+              </DialogDescription>
+            ) : (
+              <DialogDescription className="mt-1 text-xs">Note</DialogDescription>
+            )}
           </div>
         </div>
 

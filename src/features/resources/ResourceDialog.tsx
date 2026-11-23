@@ -118,12 +118,22 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const url = form.url.trim();
-    if (!isHttpUrl(url)) {
+    if (url && !isHttpUrl(url)) {
       setError("Enter a valid http(s) URL");
       urlRef.current?.focus();
       return;
     }
-    const title = form.title.trim() || suggestTitleFromUrl(url) || url;
+    // A link is optional: a note can be just text and/or images, like a Google Keep note.
+    const note = form.description.trim();
+    if (!url && !note && !images.length && !saved.length) {
+      setError("Add a link, a note or an image");
+      urlRef.current?.focus();
+      return;
+    }
+    const firstLine = note.split(/\r?\n/)[0]!.trim();
+    const title =
+      form.title.trim() ||
+      (url ? suggestTitleFromUrl(url) || url : firstLine ? (firstLine.length > 80 ? `${firstLine.slice(0, 79)}…` : firstLine) : "Image note");
     const payload = {
       url,
       title,
@@ -152,11 +162,11 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={submit} onPaste={onPaste} className="grid gap-4">
           <DialogHeader>
-            <DialogTitle>{resource ? "Edit resource" : "Save a resource"}</DialogTitle>
-            <DialogDescription>Paste a link — type and title are detected from the URL.</DialogDescription>
+            <DialogTitle>{resource ? "Edit" : "Save a link or note"}</DialogTitle>
+            <DialogDescription>Paste a link, or skip it and just write a note or paste an image.</DialogDescription>
           </DialogHeader>
 
-          <Field label="URL" htmlFor="res-url" error={error}>
+          <Field label="Link (optional)" htmlFor="res-url" error={error}>
             <Input
               id="res-url"
               ref={urlRef}
@@ -172,7 +182,7 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
             <Input
               id="res-title"
               value={form.title}
-              placeholder="Detected from the URL"
+              placeholder="From the link, or your note's first line"
               onChange={(e) => {
                 setTitleTouched(true);
                 set("title", e.target.value);
@@ -263,7 +273,7 @@ export function ResourceDialog({ open, onOpenChange, defaults, resource }: Captu
               Cancel
             </Button>
             <Button type="submit" disabled={pending}>
-              {resource ? "Save changes" : "Save resource"}
+              {resource ? "Save changes" : "Save"}
             </Button>
           </DialogFooter>
         </form>

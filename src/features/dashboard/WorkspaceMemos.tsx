@@ -32,10 +32,10 @@ export function FavoriteResources({ resources }: { resources: Resource[] }) {
         {shown.map((r) => (
           <li key={r.id} className="min-w-0 max-w-full">
             <a
-              href={r.url}
+              href={r.url || undefined}
               target="_blank"
               rel="noreferrer"
-              title={`${r.title} · ${hostOf(r.url)}`}
+              title={r.url ? `${r.title} · ${hostOf(r.url)}` : r.title}
               className="block max-w-56 truncate rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs hover:border-primary/40 hover:text-primary"
             >
               {r.title}
