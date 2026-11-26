@@ -1,5 +1,5 @@
-import { Archive, BookOpen, Binary, CalendarDays, Code2, Download, FileJson, FileText, Loader2, Monitor, Moon, Sun } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { Archive, BookOpen, Binary, CalendarDays, Code2, Download, FileJson, FileText, Loader2, Monitor, Moon, NotebookPen, Sun } from "lucide-react";
+import { type FormEvent, lazy, Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { passwordChangeSchema } from "@shared/schemas";
 import { Field } from "@/components/common/fields";
@@ -12,6 +12,9 @@ import { api, downloadUrl, errorMessage } from "@/lib/api";
 import { useMe, useUpdateProfile } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { lastBackupLabel, useBackup } from "./backup";
+
+// Loads the drawing renderer only when Settings is opened.
+const SaveDrawingsAsPdf = lazy(() => import("@/features/diagrams/SaveDrawingsAsPdf"));
 
 export default function SettingsPage() {
   return (
@@ -135,7 +138,7 @@ function ExportSection() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Full backup</p>
             <p className="text-xs text-muted-foreground">
-              Everything in one .zip, laid out like your workspaces and folders: notes as Markdown, code, drawings, links, files, book PDFs and a
+              Everything in one .zip, laid out like your workspaces and folders: notes as Markdown, code, links, PDFs and files, book PDFs and a
               complete JSON copy of every record. Keep it on your computer or a drive you trust.
             </p>
             <p className={cn("mt-1 text-xs", backup.overdue ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")}>{lastBackupLabel(backup.last)}</p>
@@ -143,6 +146,22 @@ function ExportSection() {
           <Button size="sm" onClick={backup.download}>
             <Download /> Download backup
           </Button>
+        </li>
+        <li className="py-3">
+          <div className="flex items-center gap-3">
+            <NotebookPen className="size-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Old notebooks and drawings as PDFs</p>
+              <p className="text-xs text-muted-foreground">
+                Handwriting now lives in GoodNotes. Save every old notebook and drawing as a PDF in its own folder, where you'll find it under GoodNotes PDFs.
+              </p>
+            </div>
+          </div>
+          <div className="mt-2 pl-7">
+            <Suspense fallback={<Loader2 className="size-4 animate-spin text-muted-foreground" />}>
+              <SaveDrawingsAsPdf />
+            </Suspense>
+          </div>
         </li>
         <ExportRow
           icon={FileJson}

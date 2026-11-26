@@ -54,7 +54,7 @@ export function BackupNudge() {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">Time to save a copy of your notes</p>
         <p className="text-xs text-muted-foreground">
-          {lastBackupLabel(last)}. The backup is one .zip laid out like your workspaces, with every note, drawing, file and book PDF.
+          {lastBackupLabel(last)}. The backup is one .zip laid out like your workspaces, with every note, PDF, file and book PDF.
         </p>
       </div>
       <Button size="sm" onClick={download}>

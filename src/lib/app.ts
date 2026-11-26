@@ -1,5 +1,5 @@
 /**
- * DevSpace and the Notes app (notebooks, drawings, book reader) are one build served from
+ * DevSpace and the Notes app (notes, code, links, PDFs, book reader) are one build served from
  * two addresses. The server that sends the page marks which app it is and where the other
  * one lives. Without a Notes address (local development), everything stays in one app.
  */

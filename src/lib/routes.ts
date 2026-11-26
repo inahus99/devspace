@@ -15,16 +15,15 @@ const paths = {
   },
   note: (id: string) => `/notes/${id}`,
   snippet: (id: string) => `/snippets/${id}`,
-  diagram: (id: string) => `/diagrams/${id}`,
-  notebooks: (folderId?: string | null, opts?: { tab?: "notes" | "code" | "links" }) =>
+  notebooks: (folderId?: string | null, opts?: { tab?: "notes" | "code" | "links" | "pdfs" }) =>
     folderId ? `/notebooks/${folderId}${opts?.tab ? `?tab=${opts.tab}` : ""}` : "/notebooks",
-  /** Notes app: a workspace's notes, code and links that aren't in a folder. */
-  notesWorkspace: (workspaceId: string, opts?: { tab?: "notes" | "code" | "links" }) =>
+  /** Notes app: a workspace's notes, code, links and PDFs that aren't in a folder. */
+  notesWorkspace: (workspaceId: string, opts?: { tab?: "notes" | "code" | "links" | "pdfs" }) =>
     `/notebooks/w/${workspaceId}${opts?.tab ? `?tab=${opts.tab}` : ""}`,
   dsa: (id: string) => `/dsa/${id}`,
   lld: (id: string) => `/lld/${id}`,
   book: (id: string) => `/books/${id}`,
-  bookReader: (id: string, opts?: { notes?: boolean }) => `/books/${id}/read${opts?.notes ? "?notes=1" : ""}`,
+  bookReader: (id: string) => `/books/${id}/read`,
   resources: (opts?: { highlight?: string }) => (opts?.highlight ? `/resources?highlight=${opts.highlight}` : "/resources"),
   books: () => "/books",
   /** The daily plan lives in the calendar's Day view. */
@@ -41,10 +40,10 @@ const paths = {
 };
 
 type Paths = typeof paths;
-const NOTES_ROUTES = new Set<keyof Paths>(["diagram", "notebooks", "notesWorkspace", "bookReader", "note", "snippet", "resources"]);
+const NOTES_ROUTES = new Set<keyof Paths>(["notebooks", "notesWorkspace", "bookReader", "note", "snippet", "resources"]);
 
 /**
- * Addresses of every page. Notebooks, drawings, the book reader, typed notes, code snippets
+ * Addresses of every page. Folders, the book reader, typed notes, code snippets
  * and the links library belong to the Notes app
  * and everything else to DevSpace; when the two run separately, a route that belongs to the
  * other app comes back as its full URL (react-router's Link handles those as normal links).

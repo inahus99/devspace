@@ -1,22 +1,18 @@
-import { ArrowLeft, BookOpen, ClipboardCopy, Download, ImagePlus, Loader2, Minus, MoveHorizontal, NotebookPen, PanelRightClose, Plus, Upload } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { ArrowLeft, BookOpen, ClipboardCopy, Download, Loader2, Minus, MoveHorizontal, Plus, Upload } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import type { Book } from "@shared/types";
-import { WorkspaceSelect } from "@/components/common/fields";
 import { PageSlot, usePdfDocument } from "@/components/pdf/PdfPages";
 import { EmptyState, ErrorState, FullPageSpinner } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
-import type { NotebookHandle } from "@/features/diagrams/NotebookPane";
 import { errorMessage } from "@/lib/api";
 import { isNotesApp } from "@/lib/app";
 import { todayISO } from "@/lib/dates";
-import { useAttachments, useBookProgress, useCreate, useItem, useList, useUpdate } from "@/lib/queries";
+import { useAttachments, useBookProgress, useItem, useUpdate } from "@/lib/queries";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { BOOK_FILE_LABEL, isPdfFile, uploadBookPdf } from "./bookFile";
-
-const NotebookPane = lazy(() => import("@/features/diagrams/NotebookPane"));
 
 
 export default function BookReaderPage() {
@@ -52,7 +48,7 @@ function NoPdf({ book, onUploaded }: { book: Book; onUploaded: () => void }) {
       icon={BookOpen}
       className="m-8"
       title={`No PDF for “${book.title}” yet`}
-      description="Upload the book's PDF to read it here, with a notebook beside it."
+      description="Upload the book's PDF to read it here."
       action={
         <div className="flex flex-wrap justify-center gap-2">
           <input
@@ -81,15 +77,6 @@ function NoPdf({ book, onUploaded }: { book: Book; onUploaded: () => void }) {
 type Zoom = "fit" | number;
 
 function Reader({ book, url, fileName }: { book: Book; url: string; fileName: string }) {
-  const [params, setParams] = useSearchParams();
-  const notesOpen = params.get("notes") === "1";
-  const setNotesOpen = (open: boolean) =>
-    setParams((p) => {
-      if (open) p.set("notes", "1");
-      else p.delete("notes");
-      return p;
-    });
-
   const { doc, base, error: loadError } = usePdfDocument(url);
   const [zoom, setZoom] = useState<Zoom>("fit");
   const [width, setWidth] = useState(0);
@@ -98,11 +85,6 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const slots = useRef<(HTMLDivElement | null)[]>([]);
-  const notebook = useRef<NotebookHandle | null>(null);
-  const setNotebook = useCallback((h: NotebookHandle | null) => {
-    notebook.current = h;
-  }, []);
-
   // Fit-width tracks the reader pane's width.
   useEffect(() => {
     const el = scroller.current;
@@ -178,7 +160,7 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc]);
 
-  /** Renders the current page to an image for the notebook or clipboard. */
+  /** Renders the current page to an image for the clipboard. */
   const snapshot = async () => {
     const p = await doc!.getPage(page);
     const vp1 = p.getViewport({ scale: 1 });
@@ -190,25 +172,6 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
     return { canvas, natural: { width: vp1.width, height: vp1.height } };
   };
 
-  const sendToNotebook = async () => {
-    if (!doc) return;
-    if (!notebook.current) {
-      setNotesOpen(true);
-      toast.info("Notebook opened. Click again to add this page.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const { canvas, natural } = await snapshot();
-      notebook.current.insertImage(canvas.toDataURL("image/jpeg", 0.85), natural);
-      toast.success(`Page ${page} added to your notebook`);
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const copyPage = async () => {
     if (!doc) return;
     setBusy(true);
@@ -216,7 +179,7 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
       const { canvas } = await snapshot();
       const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("Couldn't render the page"))), "image/png"));
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.success(`Page ${page} copied. Paste it into any note or drawing.`);
+      toast.success(`Page ${page} copied. Paste it into any note or into GoodNotes.`);
     } catch (err) {
       toast.error(`Couldn't copy: ${errorMessage(err)}`);
     } finally {
@@ -281,21 +244,15 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
         <Button variant="ghost" size="sm" className="h-8" onClick={() => void copyPage()} disabled={!doc || busy} title="Copy this page as an image">
           <ClipboardCopy /> <span className="hidden md:inline">Copy page</span>
         </Button>
-        <Button variant="ghost" size="sm" className="h-8" onClick={() => void sendToNotebook()} disabled={!doc || busy} title="Add this page to your notebook to annotate it">
-          {busy ? <Loader2 className="animate-spin" /> : <ImagePlus />} <span className="hidden md:inline">To notebook</span>
-        </Button>
         <Button variant="ghost" size="icon" className="size-8" asChild>
           <a href={`${url}?download=1`} aria-label={`Download ${fileName}`} title="Download PDF">
             <Download />
           </a>
         </Button>
-        <Button variant={notesOpen ? "secondary" : "default"} size="sm" className="h-8" onClick={() => setNotesOpen(!notesOpen)}>
-          {notesOpen ? <PanelRightClose /> : <NotebookPen />} {notesOpen ? "Hide notes" : "Notes"}
-        </Button>
       </div>
 
-      <div className={cn("flex min-h-0 flex-1", notesOpen ? "flex-col lg:flex-row" : "")}>
-        <div ref={scroller} onScroll={onScroll} className={cn("relative min-h-0 overflow-auto bg-muted/60", notesOpen ? "h-1/2 lg:h-auto lg:w-1/2" : "flex-1")}>
+      <div className="flex min-h-0 flex-1">
+        <div ref={scroller} onScroll={onScroll} className="relative min-h-0 flex-1 overflow-auto bg-muted/60">
           {loadError ? (
             <ErrorState error={loadError} className="m-8" />
           ) : !doc ? (
@@ -320,54 +277,6 @@ function Reader({ book, url, fileName }: { book: Book; url: string; fileName: st
             </div>
           )}
         </div>
-        {notesOpen ? (
-          <div className="flex min-h-0 flex-1 flex-col border-t bg-background lg:border-t-0 lg:border-l">
-            <BookNotebook book={book} onReady={setNotebook} />
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-/** The book's notebook beside the reader; created on first use. */
-function BookNotebook({ book, onReady }: { book: Book; onReady: (h: NotebookHandle | null) => void }) {
-  const list = useList("diagrams", { bookId: book.id });
-  const create = useCreate("diagrams");
-  const [workspaceId, setWorkspaceId] = useState<string | null>(book.workspaceId);
-  const notebook = useMemo(() => [...(list.data ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0], [list.data]);
-  useEffect(() => () => onReady(null), [onReady]);
-
-  if (list.isLoading) return <FullPageSpinner />;
-  if (notebook)
-    return (
-      <Suspense fallback={<FullPageSpinner />}>
-        <NotebookPane diagramId={notebook.id} onReady={onReady} />
-      </Suspense>
-    );
-  return (
-    <div className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-5 text-center shadow-soft">
-        <span className="mx-auto flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
-          <NotebookPen className="size-5" />
-        </span>
-        <h2 className="mt-3 text-sm font-semibold">Start a notebook for this book</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Handwrite with a pen or type on A4 pages, drop in screenshots or whole book pages, then save it all as a PDF.
-        </p>
-        {book.workspaceId ? null : (
-          <div className="mt-4 text-left">
-            <p className="mb-1.5 text-xs font-medium">Keep it in workspace</p>
-            <WorkspaceSelect value={workspaceId} onChange={setWorkspaceId} />
-          </div>
-        )}
-        <Button
-          className="mt-4 w-full"
-          disabled={!workspaceId || create.isPending}
-          onClick={() => create.mutate({ workspaceId: workspaceId!, bookId: book.id, title: `${book.title} notes` })}
-        >
-          <Plus /> Create notebook
-        </Button>
       </div>
     </div>
   );

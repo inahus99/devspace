@@ -18,7 +18,6 @@ const WorkspacesPage = lazy(() => import("@/features/workspaces/WorkspacesPage")
 const WorkspacePage = lazy(() => import("@/features/workspaces/WorkspacePage"));
 const NotePage = lazy(() => import("@/features/notes/NotePage"));
 const SnippetPage = lazy(() => import("@/features/snippets/SnippetPage"));
-const DiagramPage = lazy(() => import("@/features/diagrams/DiagramPage"));
 const BookReaderPage = lazy(() => import("@/features/books/BookReaderPage"));
 const NotebooksApp = lazy(() => import("@/features/notebooks/NotebooksApp"));
 const NotesShell = lazy(() => import("@/features/notebooks/NotebooksApp").then((m) => ({ default: m.NotesShell })));
@@ -48,7 +47,7 @@ function RequireAuth() {
   );
 }
 
-/** Signed-in pages that bring their own full-screen layout (the Notebooks app). */
+/** Signed-in pages that bring their own full-screen layout (the Notes app). */
 function RequireAuthBare() {
   const { data: user, isLoading } = useMe();
   const location = useLocation();
@@ -101,7 +100,7 @@ function Screen({ children }: { children: ReactNode }) {
   return <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground">{children}</div>;
 }
 
-/** The Notes app: notebooks, drawings and the book reader. */
+/** The Notes app: folders of notes, code, links and GoodNotes PDFs, and the book reader. */
 const notesRoutes = [
   {
     element: <Root />,
@@ -112,7 +111,7 @@ const notesRoutes = [
         children: [
           { index: true, element: <Navigate to="/notebooks" replace /> },
           {
-            // Folders on the left; notebooks, notes, code and links on the right.
+            // Folders on the left; notes, code, links and PDFs on the right.
             element: <NotesShell />,
             children: [
               { path: "notebooks", element: <NotebooksApp /> },
@@ -123,7 +122,8 @@ const notesRoutes = [
               { path: "resources", element: <NotesPage><ResourceLibraryPage /></NotesPage> },
             ],
           },
-          { path: "diagrams/:id", element: <Screen><DiagramPage /></Screen> },
+          // Old notebook and drawing links: those are PDFs in their folders now.
+          { path: "diagrams/:id", element: <Navigate to="/notebooks" replace /> },
           { path: "books/:id/read", element: <Screen><BookReaderPage /></Screen> },
           { path: "*", element: <OtherApp to="devspace" /> },
         ],
@@ -163,7 +163,7 @@ const devspaceRoutes = [
           { path: "w/:id", element: <WorkspacePage /> },
           { path: "notes/:id", element: notesSeparate ? toNotes : <NotePage /> },
           { path: "snippets/:id", element: notesSeparate ? toNotes : <SnippetPage /> },
-          { path: "diagrams/:id", element: notesSeparate ? toNotes : <DiagramPage /> },
+          { path: "diagrams/:id", element: notesSeparate ? toNotes : <Navigate to="/notebooks" replace /> },
           { path: "dsa/:id", element: <DsaProblemPage /> },
           { path: "lld/:id", element: <LldExercisePage /> },
           { path: "resources", element: notesSeparate ? toNotes : <ResourceLibraryPage /> },

@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, BookOpenText, CalendarPlus, Download, FileUp, ImagePlus, Link2, NotebookPen, Pencil, Quote, Trash2, X } from "lucide-react";
+import { ArrowLeft, BookOpen, BookOpenText, CalendarPlus, Download, FileUp, ImagePlus, Link2, Pencil, Quote, Trash2, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -293,7 +293,7 @@ function CoverEditor({ book }: { book: Book }) {
   );
 }
 
-/** The book's own PDF: upload once, then read it in DevSpace with a notebook beside it. */
+/** The book's own PDF: upload once, then read it in DevSpace. */
 function BookFileCard({ book }: { book: Book }) {
   const files = useAttachments({ bookId: book.id });
   const delFile = useDeleteAttachment();
@@ -352,11 +352,6 @@ function BookFileCard({ book }: { book: Book }) {
                 <BookOpen /> Read
               </Link>
             </Button>
-            <Button size="sm" variant="outline" asChild>
-              <Link to={routes.bookReader(book.id, { notes: true })}>
-                <NotebookPen /> Read with notes
-              </Link>
-            </Button>
             <Button size="icon-sm" variant="ghost" asChild>
               <a href={`${file.url}?download=1`} aria-label="Download PDF" title="Download PDF">
                 <Download />
@@ -372,7 +367,7 @@ function BookFileCard({ book }: { book: Book }) {
               aria-label="Remove PDF"
               title="Remove PDF"
               onClick={() =>
-                void confirm({ title: "Remove this book's PDF?", description: "Your progress, highlights and notebook stay.", destructive: true }).then(
+                void confirm({ title: "Remove this book's PDF?", description: "Your progress and highlights stay.", destructive: true }).then(
                   (ok) => ok && delFile.mutate(file.id),
                 )
               }

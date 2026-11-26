@@ -26,10 +26,11 @@ import {
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import type { CaptureKind } from "@/stores/ui";
+import { GoodNotesPdfs } from "./GoodNotesPdfs";
 
 /**
  * The Contents tab of a workspace or folder: the way into its notes (which live in the Notes
- * app), its sub-folders as cards, and on a workspace's main page its books.
+ * app), its sub-folders as cards, its GoodNotes PDFs, and on a workspace's main page its books.
  * Questions, design exercises and files have their own tabs.
  */
 export function TopicView({
@@ -52,7 +53,6 @@ export function TopicView({
   const questions = useList("dsa", scope);
   const exercises = useList("lld", scope);
   const books = useList("books", scope, { enabled: !folder });
-  const diagrams = useList("diagrams", scope);
   const files = useAttachments({ ...scope, standalone: "1" });
 
   const children = folders
@@ -68,22 +68,17 @@ export function TopicView({
       questions.data,
       exercises.data,
       files.data,
-      diagrams.data,
     ])
       bump(rows);
     const cover = new Map<string, string>();
     for (const a of files.data ?? [])
       if (a.kind === "image" && a.folderId && !cover.has(a.folderId))
         cover.set(a.folderId, a.url);
-    for (const d of diagrams.data ?? [])
-      if (d.preview && d.folderId && !cover.has(d.folderId))
-        cover.set(d.folderId, d.preview);
     return { count, cover };
   }, [
     questions.data,
     exercises.data,
     files.data,
-    diagrams.data,
   ]);
 
   const wsBooks = folder ? [] : (books.data ?? []);
@@ -154,7 +149,7 @@ export function TopicView({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-base font-semibold">Your notes for {title}</span>
-          <span className="mt-0.5 block text-sm text-muted-foreground">Notebook, notes, drawings, code and links are all in the Notes app.</span>
+          <span className="mt-0.5 block text-sm text-muted-foreground">Typed notes, code and links are in the Notes app. Handwriting from GoodNotes is saved below as PDFs.</span>
         </span>
         <span className="inline-flex h-9 shrink-0 items-center gap-1.5 self-start rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-transform group-hover:translate-x-0.5 sm:self-auto">
           Go to Notes <ArrowRight className="size-4" />
@@ -171,6 +166,8 @@ export function TopicView({
         cover={cardInfo.cover}
         onOpen={onOpenFolder}
       />
+
+      <GoodNotesPdfs workspaceId={workspace.id} folderId={here} files={files.data} loading={files.isLoading} />
 
       {sections}
     </div>

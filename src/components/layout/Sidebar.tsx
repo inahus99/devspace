@@ -24,7 +24,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/workspaces", label: "My Workspaces", icon: Layers, end: true },
   { to: "/calendar", label: "Master Calendar", icon: CalendarDays },
-  { to: routes.notebooks(), label: "Notebooks", icon: NotebookPen },
+  { to: routes.notebooks(), label: "Notes", icon: NotebookPen },
   { to: routes.resources(), label: "Resource Library", icon: Library },
   { to: "/books", label: "Bookshelf", icon: BookOpen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
